@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+
+# Local environment variants
+.env.*
+!.env.example
+
+# Python tooling and environments
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# JavaScript dependencies and build output
+node_modules/
+dist/
+build/
+
+# Local credentials and private keys
+*.pem
+*.p12
+*.pfx
+credentials.json
+secrets.json
+
+# Local backups and logs
+*.bak
+*.log
+README_before_release.md
+
+# Temporary evaluation backups and broken experiments
+*.backup
+eval/run_broken.py

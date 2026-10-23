@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kavach: Privacy Protection for AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">PRIVACY-FIRST AI PROTECTION</p>
+    <h1>Kavach<span class="brand-dot">.</span></h1>
+    <p>Check your prompts and documents before sharing them with AI tools. Kavach detects sensitive information and shows you a masked version.</p>
+  </header>
+
+  <main>
+    <section aria-label="Prompt scanner">
+      <div class="section-intro">
+        <div>
+          <h2 class="section-title">Prompt scanner</h2>
+          <p class="section-description">Paste text below or try one of the examples.</p>
+        </div>
+        <span class="privacy-pill"><span class="privacy-dot"></span> Sensitive text masking</span>
+      </div>
+
+      <div class="bar">
+        <span class="bar-label">Try a sample:</span>
+        <button type="button" data-s="0">Support ticket</button>
+        <button type="button" data-s="1">Hinglish message</button>
+        <button type="button" data-s="2">Code with a key</button>
+        <button type="button" id="clear" class="button-quiet">Clear</button>
+      </div>
+
+      <div class="grid">
+        <section class="pane">
+          <div class="pane-heading">
+            <span class="step-number">01</span>
+            <h3>Your prompt</h3>
+          </div>
+          <textarea id="inp" aria-label="Your prompt" placeholder="Paste text here to scan it…"></textarea>
+          <p class="pane-hint">Your text is checked for supported sensitive patterns.</p>
+        </section>
+
+        <section class="pane output-pane">
+          <div class="pane-heading">
+            <span class="step-number">02</span>
+            <h3>What the AI receives</h3>
+          </div>
+          <div class="out empty" id="out" aria-live="polite">The masked version appears here.</div>
+          <p class="pane-hint">Highlighted labels show information that has been masked.</p>
+        </section>
+      </div>
+
+      <div class="status" aria-live="polite">
+        <div>
+          <p class="status-label">Scan assessment</p>
+          <span class="level none" id="level">No risk found</span>
+        </div>
+        <span id="score" class="score-text">Enter text to begin scanning.</span>
+      </div>
+
+      <section class="pane findings-pane">
+        <div class="pane-heading">
+          <span class="step-number">03</span>
+          <h3>Detected information</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Finding</th><th>Position</th><th>Confidence</th></tr>
+            </thead>
+            <tbody id="rows">
+              <tr><td class="empty" colspan="3">Nothing detected yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="feature" id="document-scanner">
+      <div class="section-intro">
+        <div>
+          <h2 class="section-title">Document scanner</h2>
+          <p class="section-description">Scan a TXT or PDF file and download a masked text copy.</p>
+        </div>
+        <span class="file-pill">TXT / PDF · Up to 5 MB</span>
+      </div>
+
+      <section class="pane document-pane">
+        <form id="file-form">
+          <label for="file-input" class="upload-label">Choose a TXT or PDF file</label>
+          <input class="file-input" id="file-input" name="file" type="file" accept=".txt,.pdf,text/plain,application/pdf" required>
+          <p class="help">PDFs must contain selectable/extractable text. Scanned-image PDFs are not supported yet.</p>
+          <button type="submit" id="scan-file-button" class="button-primary">Scan document</button>
+        </form>
+
+        <p class="message" id="file-status" role="status" aria-live="polite"></p>
+
+        <div id="file-results" hidden>
+          <hr class="result-divider">
+          <h3 class="results-title">Document results</h3>
+          <div class="file-summary">
+            <p><strong>File</strong><span id="file-name"></span></p>
+            <p><strong>Pages</strong><span id="file-pages"></span></p>
+            <p><strong>Findings</strong><span id="file-count"></span></p>
+            <p><strong>Risk</strong><span id="file-risk"></span></p>
+          </div>
+          <h4 class="subheading">Detected information</h4>
+          <div id="file-findings" class="file-findings"></div>
+          <div class="result-box">
+            <div class="result-heading">Masked document text</div>
+            <pre id="file-masked"></pre>
+          </div>
+          <div class="bar download-bar">
+            <button type="button" id="download-masked" class="button-primary">Download masked text</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <span class="footer-brand">Kavach.</span>
+    <p>Kavach processes scans through its server. Avoid uploading real sensitive documents while testing. Only extracted document text is scanned; image-only PDFs require OCR.</p>
+  </footer>
+</body>
+</html>

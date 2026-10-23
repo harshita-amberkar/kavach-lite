@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Kavach",
+  "version": "0.1.0",
+  "description": "Warns and masks personal data in your prompt before it is sent to an AI tool. Runs fully on your device.",
+  "permissions": ["storage"],
+  "content_scripts": [{
+    "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*", "https://claude.ai/*", "https://gemini.google.com/*"],
+    "js": ["detector.js", "content.js"],
+    "run_at": "document_idle"
+  }],
+  "options_ui": { "page": "options.html", "open_in_tab": true }
+}

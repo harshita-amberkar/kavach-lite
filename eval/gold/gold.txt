@@ -1,0 +1,52 @@
+﻿# lang | text   (use ONLY fake data; generate values with: python -m eval.fake)
+# langs: en, hi, mr, hinglish, mr_en
+en | Why was PAN [[PAN:ABCPE1234F]] rejected for client Rohan Mehta?
+en | Invoice total 1,45,00,000 and PO number 4821 7733 9012 are attached, please summarise.
+hinglish | bhai ye number [[PHONE:98765 43210]] pe call kar, UPI [[UPI_ID:rohan.m21@okaxis]] hai
+hi | à¤•à¥ƒà¤ªà¤¯à¤¾ à¤‡à¤¸ à¤°à¤¿à¤ªà¥‹à¤°à¥à¤Ÿ à¤•à¥‹ à¤ªà¤¾à¤‚à¤š à¤¬à¤¿à¤‚à¤¦à¥à¤“à¤‚ à¤®à¥‡à¤‚ à¤¸à¤®à¤à¤¾à¤à¤‚, à¤•à¥‹à¤ˆ à¤¨à¤¿à¤œà¥€ à¤œà¤¾à¤¨à¤•à¤¾à¤°à¥€ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆà¥¤
+mr | à¤®à¤¾à¤à¤¾ à¤ªà¥…à¤¨ [[PAN:ABCPE1234F]] à¤†à¤¹à¥‡, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤¤à¤ªà¤¾à¤¸à¤¾.
+hi:tricky | आधार क्रमांक [[AADHAAR:२३४५६७८९०१२४]] इस संदेश में है, कृपया इसे छिपाएं।
+en | Please verify the tax registration number [[PAN:ANEPU9078E]] before preparing the report.
+hinglish | bhai is number [[PHONE:+91 72386 55486]] par call karna, meeting confirm karni hai.
+en:tricky | Check whether this payment card [[CARD:4980 0168 5514 5902]] was entered correctly.
+hinglish | Payment bhejne ke liye UPI ID [[UPI_ID:ravfd.278@oksbi]] use karo.
+mr | à¤•à¥ƒà¤ªà¤¯à¤¾ GST à¤¨à¥‹à¤‚à¤¦à¤£à¥€ à¤•à¥à¤°à¤®à¤¾à¤‚à¤• [[GSTIN:21CMKPP6456M1ZI]] à¤¤à¤ªà¤¾à¤¸à¤¾.
+en | Send the report to [[EMAIL:scdir.sfus@acme.in]] after reviewing it.
+en:neg | Order ID 726018159082 was dispatched today, please track it.
+hinglish:neg | mera PO number 501661318603 hai, status batao
+en:neg | Consignment no. 3390 9960 3089 is stuck at the Pune hub.
+mr:neg | ऑर्डर क्रमांक 446281948213 अजून पोहोचला नाही.
+en:neg | Reference ID 5518 1909 3782 is on the invoice, can you summarise the dispute?
+hinglish:neg | tracking number 857975 432313 hai, kab tak aayega?
+hi:neg | माझा ऑर्डर नंबर 687574911868 आहे, डिलिव्हरी कधी होईल?
+en:neg | Ticket 4527 6018 9555 was escalated to the L2 team yesterday.
+en | Why was PAN [[PAN:FAOCW8016B]] rejected on the ITR portal? Client GSTIN is [[GSTIN:19YKYPS1406D1Z7]].
+hinglish | bhai mera aadhaar [[AADHAAR:8905 5778 3530]] hai, loan form mein bharna hai
+hi | à¤®à¥‡à¤°à¤¾ à¤¨à¤‚à¤¬à¤° [[PHONE:+91-6967402098]] à¤¹à¥ˆ, à¤‡à¤¸ à¤ªà¤° à¤•à¥‰à¤² à¤•à¤°à¤•à¥‡ OTP à¤¬à¤¤à¤¾à¤‡à¤
+mr | à¤®à¤¾à¤à¥‡ à¤•à¤¾à¤°à¥à¤¡ [[CARD:4081 2004 8597 1469]] à¤šà¥€ à¤®à¥à¤¦à¤¤ à¤¸à¤‚à¤ªà¤²à¥€ à¤†à¤¹à¥‡, à¤¨à¤µà¥€à¤¨ à¤•à¤¾à¤°à¥à¤¡ à¤•à¤§à¥€ à¤¯à¥‡à¤ˆà¤²?
+en | Send the refund to UPI [[UPI_ID:davo.@paytm]] and mail the receipt to [[EMAIL:ubrlr.jhjg@gmail.com]].
+en | Please verify GSTIN [[GSTIN:25MZBPK4929P1ZK]] and tell me if the state code looks right.
+hinglish | mera PAN [[PAN:oiaph8309t]] hai, kya ye sahi format mein hai?
+hi | à¤‡à¤¸ à¤¨à¤‚à¤¬à¤° [[PHONE:6933692912]] à¤ªà¤° à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª à¤•à¤°à¥‡à¤‚ à¤”à¤° [[UPI_ID:mfglc709@okaxis]] à¤ªà¤° à¤ªà¥ˆà¤¸à¥‡ à¤­à¥‡à¤œà¥‡à¤‚à¥¤
+en | My card [[CARD:4571 6078 9405 9693]] got declined, mail me at [[EMAIL:rrmqq_vmvu@acme.in]].
+mr | आधार क्रमांक [[AADHAAR:2635-2204-0296]] बरोबर आहे का ते तपासा.
+mr_en | mera PAN [[PAN:xaicp9194f]] la link kara aani [[PHONE:+91-7784319565]] var OTP pathva
+en | Our supplier GSTIN is [[GSTIN:31IROPO8996B1Z4]], draft a polite reminder email.
+hinglish | payment [[UPI_ID:xeams.0@ibl]] pe bhejo, receipt [[EMAIL:iydbk.wyll@corp.co.in]] pe mail karna
+en | Aadhaar [[AADHAAR:4565 9150 1748]] was used for KYC but the address does not match, what next?
+hi | à¤•à¤¾à¤°à¥à¤¡ à¤¨à¤‚à¤¬à¤° [[CARD:4985 5320 4448 8842]] à¤¸à¥‡ à¤ªà¥‡à¤®à¥‡à¤‚à¤Ÿ à¤«à¥‡à¤² à¤¹à¥à¤†, à¤•à¤¾à¤°à¤£ à¤¬à¤¤à¤¾à¤‡à¤
+en | My PAN is [[PAN:CGLFS5535N]] and phone [[PHONE:77177-51050]], fill this form for me.
+mr | GST à¤•à¥à¤°à¤®à¤¾à¤‚à¤• [[GSTIN:29ZGSPS0857Q1ZG]] à¤¤à¤ªà¤¾à¤¸à¥‚à¤¨ à¤ªà¤¾à¤¹à¤¾ à¤†à¤£à¤¿ [[EMAIL:ihlxz.humw@corp.co.in]] à¤µà¤° à¤ªà¤¾à¤ à¤µà¤¾
+hinglish | ye UPI [[UPI_ID:vukvw.@okaxis]] sahi hai kya? paise bhejne hain
+en:tricky | cfg = {"aadhaar": "[[AADHAAR:9983 8342 9406]]", "retry": 3}  # remove before commit
+en:tricky | card_no = "[[CARD:4285700132808638]]"; print(mask(card_no))
+en:neg | The invoice total is 1,45,00,000 and the due date is 12-04-2026, please summarise.
+en:neg | My score in the test was 98765 out of 100000, is that a good rank?
+hinglish:neg | mera pin code 400001 hai, Mumbai ka sabse nazdiki branch batao
+hi:neg | à¤®à¥‡à¤°à¥‡ à¤…à¤‚à¤• 4570 à¤†à¤ à¤”à¤° à¤°à¥ˆà¤‚à¤• 12345 à¤¹à¥ˆ, à¤†à¤—à¥‡ à¤•à¥à¤¯à¤¾ à¤•à¤°à¥‚à¤‚?
+mr:neg | à¤‘à¤°à¥à¤¡à¤° à¤•à¥à¤°à¤®à¤¾à¤‚à¤• à¤…à¤œà¥‚à¤¨ à¤†à¤²à¤¾ à¤¨à¤¾à¤¹à¥€, à¥© à¤¦à¤¿à¤µà¤¸ à¤à¤¾à¤²à¥‡ à¤†à¤¹à¥‡à¤¤.
+en:neg | Write a regex that matches a 16-digit number grouped in fours, no real data.
+en:neg | Ticket INC0042381 was escalated on 2026-10-14, draft an update for the customer.
+hinglish:neg | mujhe 2,50,000 ka loan chahiye 5 saal ke liye, EMI kitni hogi?
+en:real | Email the team at [[EMAIL:support@acme.in]] about the Q3 report, it is not personal.
+en:neg | Explain how the Verhoeff checksum works with a small worked example.
