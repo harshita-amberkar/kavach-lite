@@ -216,7 +216,7 @@
 
     modal(items, action, doMask, () => {
       // Remember the exact prompt the user approved.
-      bypassNextText = getText(el);
+      bypassNextText = text;
 
       const sendButton = [
         ...document.querySelectorAll(SEND)
