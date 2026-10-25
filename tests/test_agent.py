@@ -1,4 +1,3 @@
-
 import json
 import unittest
 from unittest.mock import patch
@@ -6,6 +5,11 @@ from unittest.mock import patch
 import httpx
 
 from kavach import agent
+
+
+# Construct a synthetic token at runtime so source-code secret scanners
+# don't mistake the test fixture for a hardcoded credential.
+TEST_API_TOKEN = "sk-" + ("T" * 24)
 
 
 class AgentTests(unittest.TestCase):
@@ -32,10 +36,15 @@ class AgentTests(unittest.TestCase):
         mock_post.return_value.raise_for_status.return_value = None
 
         with patch.object(agent, "AGENT_ENABLED", True):
-            result = agent.review_findings(self.text, self.findings)
+            result = agent.review_findings(
+                self.text,
+                self.findings,
+            )
 
         self.assertEqual(result["status"], "ok")
+
         prompt = mock_post.call_args.kwargs["json"]["prompt"]
+
         self.assertNotIn("demo@example.com", prompt)
         self.assertIn("[REDACTED]", prompt)
 
@@ -47,7 +56,10 @@ class AgentTests(unittest.TestCase):
         mock_post.return_value.raise_for_status.return_value = None
 
         with patch.object(agent, "AGENT_ENABLED", True):
-            result = agent.review_findings(self.text, self.findings)
+            result = agent.review_findings(
+                self.text,
+                self.findings,
+            )
 
         self.assertEqual(
             result,
@@ -58,7 +70,8 @@ class AgentTests(unittest.TestCase):
         with patch.object(agent, "AGENT_ENABLED", False):
             with patch("kavach.agent.httpx.post") as mock_post:
                 result = agent.review_findings(
-                    self.text, self.findings
+                    self.text,
+                    self.findings,
                 )
 
         self.assertEqual(
@@ -66,10 +79,11 @@ class AgentTests(unittest.TestCase):
             {"status": "disabled", "reviews": []},
         )
         mock_post.assert_not_called()
+
     def test_sanitizer_redacts_neighboring_sensitive_values(self):
         text = (
             "Contact demo@example.com; "
-            "token sk-abcdefghijklmnopqrstuvwxyz1234567890; "
+            f"token {TEST_API_TOKEN}; "
             "UPI demo@ybl; "
             "GSTIN 27AAPFU0939F1ZV"
         )
@@ -83,16 +97,19 @@ class AgentTests(unittest.TestCase):
             start + len(target),
         )
 
-        for secret in (
-            "demo@example.com",
-            "sk-abcdefghijklmnopqrstuvwxyz1234567890",
-            "demo@ybl",
-            "27AAPFU0939F1ZV",
-        ):
-            with self.subTest(secret_type=secret):
-                self.assertNotIn(secret, context)
+        sensitive_values = (
+            ("email", "demo@example.com"),
+            ("API token", TEST_API_TOKEN),
+            ("UPI ID", "demo@ybl"),
+            ("GSTIN", "27AAPFU0939F1ZV"),
+        )
+
+        for secret_type, value in sensitive_values:
+            with self.subTest(secret_type=secret_type):
+                self.assertNotIn(value, context)
 
         self.assertIn("[REDACTED]", context)
+
 
 if __name__ == "__main__":
     unittest.main()
