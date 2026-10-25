@@ -77,7 +77,37 @@ class SecurityMiddlewareTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+    def test_chat_proxy_requires_kavach_token(self):
+        response = self.client.post(
+            "/v1/chat/completions",
+            json={
+                "model": "test-model",
+                "messages": [
+                    {"role": "user", "content": "Hello"}
+                ],
+            },
+        )
 
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.json()["detail"],
+            "Invalid or missing KAVACH API token.",
+        )
+
+    def test_chat_proxy_still_requires_provider_bearer(self):
+        response = self.client.post(
+            "/v1/chat/completions",
+            headers=self.auth,
+            json={
+                "model": "test-model",
+                "messages": [
+                    {"role": "user", "content": "Hello"}
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("Bearer", response.json()["detail"])
 
 if __name__ == "__main__":
     unittest.main()

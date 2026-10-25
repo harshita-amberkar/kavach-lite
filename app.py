@@ -1,4 +1,3 @@
-
 """KAVACH API: scan text and documents, and mask PII in AI chat requests."""
 
 import ipaddress
@@ -13,10 +12,10 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File
+from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
@@ -25,7 +24,6 @@ from kavach.global_detector import analyze_global
 from kavach.agent import AGENT_ENABLED, review_findings
 from kavach.agentic import run_agentic_workflow
 from kavach.audit import list_recent_runs
-from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 
 # --------------------------------------------------
 # Configuration
@@ -75,7 +73,6 @@ MAX_CHAT_TEXT_CHARS = 20000
 MAX_UPSTREAM_RESPONSE_BYTES = 5 * 1024 * 1024
 UPSTREAM_TIMEOUT = 60
 
-
 # --------------------------------------------------
 # FastAPI application
 # --------------------------------------------------
@@ -86,10 +83,8 @@ app = FastAPI(
     version="1.2.4",
 )
 
-# --------------------------------------------------
-# Local API authentication and allowed hosts
-# --------------------------------------------------
-
+# A configured token remains stable across restarts.
+# Otherwise, generate a random token for this server process.
 _configured_api_token = os.getenv("KAVACH_API_TOKEN", "").strip()
 API_TOKEN = _configured_api_token or secrets.token_urlsafe(32)
 app.state.api_token = API_TOKEN
@@ -105,9 +100,8 @@ app.mount(
     name="static",
 )
 
-
 # --------------------------------------------------
-# Browser request origin protection and API token authentication
+# Browser request origin protection and API authentication
 # --------------------------------------------------
 
 def _origin_matches_request(origin: str, request: Request) -> bool:
@@ -138,24 +132,30 @@ def _origin_matches_request(origin: str, request: Request) -> bool:
 
 @app.middleware("http")
 async def enforce_same_origin_for_writes(request: Request, call_next):
-    """Reject cross-origin writes and require a token for /api routes."""
+    """Reject cross-origin writes and authenticate protected API routes."""
+
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         origin = request.headers.get("origin")
 
-        # Requests without Origin remain possible for CLI clients, but API
-        # requests must still include the KAVACH token.
+        # Requests without Origin remain supported for local CLI/API clients.
+        # Protected routes still require the KAVACH token below.
         if origin and not _origin_matches_request(origin, request):
             return JSONResponse(
                 status_code=403,
                 content={"detail": "Cross-origin requests are not allowed."},
             )
 
-    # The health endpoint remains public for local health checks.
-    # Other /api routes require the KAVACH token.
-    if (
-        request.url.path.startswith("/api/")
-        and request.url.path != "/api/health"
-    ):
+    # Keep health checks public.
+    # Protect other /api routes and the chat proxy.
+    protected_api_path = (
+        (
+            request.url.path.startswith("/api/")
+            and request.url.path != "/api/health"
+        )
+        or request.url.path == "/v1/chat/completions"
+    )
+
+    if protected_api_path:
         supplied_token = request.headers.get("x-kavach-token", "")
         expected_token = request.app.state.api_token
 
@@ -180,7 +180,6 @@ def validate_upstream_url():
     Hostname allowlisting is not complete SSRF protection.
     Production deployments should also enforce network egress rules.
     """
-
     try:
         if not UPSTREAM or any(
             char.isspace() or ord(char) < 32
@@ -189,7 +188,6 @@ def validate_upstream_url():
             raise ValueError("Invalid URL characters")
 
         parsed = urlsplit(UPSTREAM)
-
         scheme = parsed.scheme.lower()
         hostname = parsed.hostname
         port = parsed.port
@@ -199,8 +197,6 @@ def validate_upstream_url():
 
         hostname = hostname.lower()
 
-        # Reject credentials, query strings, fragments, and
-        # paths other than the expected API base paths.
         if (
             parsed.username is not None
             or parsed.password is not None
@@ -210,7 +206,6 @@ def validate_upstream_url():
         ):
             raise ValueError("Unsupported URL components")
 
-        # Reject alternate hostname spellings.
         if "\\" in UPSTREAM or hostname.endswith("."):
             raise ValueError("Unsupported hostname format")
 
@@ -239,7 +234,6 @@ def validate_upstream_url():
         else:
             # Validate DNS hostname syntax.
             labels = hostname.split(".")
-
             if (
                 len(hostname) > 253
                 or len(labels) < 2
@@ -276,7 +270,6 @@ def validate_upstream_url():
 
 def configured_upstream_hostname():
     """Return the configured hostname for diagnostic logging."""
-
     try:
         return urlsplit(UPSTREAM).hostname or "(missing)"
     except ValueError:
@@ -318,10 +311,7 @@ def home():
 
 @app.get("/api/health")
 def health():
-    return {
-        "status": "ok",
-        "version": "1.2.4",
-    }
+    return {"status": "ok", "version": "1.2.4"}
 
 
 # --------------------------------------------------
@@ -330,10 +320,7 @@ def health():
 
 class ScanIn(BaseModel):
     text: str = Field(max_length=20000)
-    mode: str = Field(
-        default="label",
-        pattern="^(label|partial)$",
-    )
+    mode: str = Field(default="label", pattern="^(label|partial)$")
 
 
 @app.post("/api/scan")
@@ -348,6 +335,7 @@ def scan_text(body: ScanIn):
 
     return result
 
+
 @app.post("/api/scan-global")
 def scan_global_text(body: ScanIn):
     result = analyze_global(body.text, body.mode)
@@ -360,6 +348,7 @@ def scan_global_text(body: ScanIn):
 
     return result
 
+
 @app.post("/api/agentic/scan")
 def scan_agentic(body: ScanIn):
     return run_agentic_workflow(
@@ -368,14 +357,12 @@ def scan_agentic(body: ScanIn):
         source="api",
     )
 
+
 @app.get("/api/agentic/history")
-def agentic_history(
-    limit: int = Query(default=20, ge=1, le=100)
-):
+def agentic_history(limit: int = Query(default=20, ge=1, le=100)):
     """Return bounded workflow metadata without prompt contents."""
-    return {
-        "runs": list_recent_runs(limit)
-    }
+    return {"runs": list_recent_runs(limit)}
+
 
 # --------------------------------------------------
 # Scan TXT and PDF documents
@@ -452,19 +439,13 @@ async def scan_file(file: UploadFile = File(...)):
             except Exception:
                 raise HTTPException(
                     status_code=400,
-                    detail=(
-                        "Could not read this PDF. "
-                        "Try a valid, text-based PDF."
-                    ),
+                    detail="Could not read this PDF. Try a valid, text-based PDF.",
                 )
 
         if not text.strip():
             raise HTTPException(
                 status_code=422,
-                detail=(
-                    "No readable text found. "
-                    "Scanned-image PDFs need OCR."
-                ),
+                detail="No readable text found. Scanned-image PDFs need OCR.",
             )
 
         result = analyze_global(text, mode="label")
@@ -560,7 +541,6 @@ INTEGER_CHAT_FIELDS = {
 
 def reject_duplicate_keys(pairs):
     """Reject ambiguous JSON objects containing duplicate keys."""
-
     result = {}
 
     for key, value in pairs:
@@ -573,7 +553,6 @@ def reject_duplicate_keys(pairs):
 
 def reject_nonstandard_constant(value):
     """Reject NaN and Infinity in JSON input."""
-
     raise ValueError(f"Invalid JSON constant: {value}")
 
 
@@ -620,10 +599,7 @@ def validate_and_mask_chat_payload(payload: dict):
             if (
                 isinstance(value, bool)
                 or not isinstance(value, (int, float))
-                or (
-                    isinstance(value, float)
-                    and not math.isfinite(value)
-                )
+                or (isinstance(value, float) and not math.isfinite(value))
             ):
                 raise HTTPException(
                     status_code=400,
@@ -663,7 +639,6 @@ def validate_and_mask_chat_payload(payload: dict):
     masked_messages = []
     redactions = 0
     worst = "none"
-
     risk_rank = {
         "none": 0,
         "low": 1,
@@ -714,13 +689,12 @@ def validate_and_mask_chat_payload(payload: dict):
             raise HTTPException(
                 status_code=413,
                 detail=(
-                    "A chat message exceeds the maximum "
-                    "allowed length of 20,000 characters."
+                    "A chat message exceeds the maximum allowed length "
+                    "of 20,000 characters."
                 ),
             )
 
         result = analyze(content)
-
         findings = result.get("findings", [])
         redactions += len(findings)
 
@@ -750,7 +724,8 @@ def validate_and_mask_chat_payload(payload: dict):
             "content": masked_content,
         })
 
-    # Build a fresh allowlisted payload.
+    # Construct a fresh allowlisted payload.
+    # Only the masked messages are forwarded upstream.
     masked_payload = {
         key: value
         for key, value in payload.items()
@@ -792,8 +767,8 @@ def validate_and_mask_chat_payload(payload: dict):
     },
 )
 async def chat_proxy(request: Request):
+    # The middleware checks the KAVACH API token before this function runs.
     # Validate destination before reading or forwarding the body.
-    # A rejected URL never reaches the HTTP client.
     upstream_url = validate_upstream_url()
 
     raw_body = await read_limited_request_body(request)
@@ -834,20 +809,25 @@ async def chat_proxy(request: Request):
     if BLOCK_HIGH and worst == "high":
         return JSONResponse(
             {
-                "error": "Blocked: prompt contained high-risk personal data."
+                "error": (
+                    "Blocked: prompt contained high-risk personal data."
+                )
             },
             status_code=422,
         )
 
-    # Require a non-empty Bearer token.
-    # This validates header format, not whether the token is genuine.
+    # This validates the upstream Bearer header format,
+    # not whether the provider recognizes the credential.
     auth = request.headers.get("authorization")
 
     if (
         not auth
         or not auth.startswith("Bearer ")
         or not auth[7:].strip()
-        or any(ord(char) < 32 or ord(char) == 127 for char in auth)
+        or any(
+            ord(char) < 32 or ord(char) == 127
+            for char in auth
+        )
     ):
         raise HTTPException(
             status_code=401,
@@ -869,7 +849,6 @@ async def chat_proxy(request: Request):
                     "Content-Type": "application/json",
                 },
             ) as upstream_response:
-
                 response_body = bytearray()
 
                 async for chunk in upstream_response.aiter_bytes():
