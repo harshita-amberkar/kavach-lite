@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import re
+import secrets
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -14,6 +15,7 @@ from urllib.parse import urlsplit
 import httpx
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
@@ -52,6 +54,15 @@ ALLOW_LOCAL_UPSTREAM = (
     os.getenv("KAVACH_ALLOW_LOCAL_UPSTREAM", "0") == "1"
 )
 
+ALLOWED_HOSTS = [
+    host.strip().lower()
+    for host in os.getenv(
+        "KAVACH_ALLOWED_HOSTS",
+        "127.0.0.1,localhost",
+    ).split(",")
+    if host.strip()
+]
+
 STATIC = Path(__file__).parent / "static"
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
@@ -75,11 +86,86 @@ app = FastAPI(
     version="1.2.4",
 )
 
+# --------------------------------------------------
+# Local API authentication and allowed hosts
+# --------------------------------------------------
+
+_configured_api_token = os.getenv("KAVACH_API_TOKEN", "").strip()
+API_TOKEN = _configured_api_token or secrets.token_urlsafe(32)
+app.state.api_token = API_TOKEN
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=ALLOWED_HOSTS,
+)
+
 app.mount(
     "/static",
     StaticFiles(directory=STATIC),
     name="static",
 )
+
+
+# --------------------------------------------------
+# Browser request origin protection and API token authentication
+# --------------------------------------------------
+
+def _origin_matches_request(origin: str, request: Request) -> bool:
+    """Accept only origins matching the current request's origin."""
+    try:
+        parsed = urlsplit(origin)
+
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+        ):
+            return False
+
+        return (
+            parsed.scheme.lower() == request.url.scheme.lower()
+            and parsed.hostname.lower()
+            == (request.url.hostname or "").lower()
+            and parsed.port == request.url.port
+        )
+    except ValueError:
+        return False
+
+
+@app.middleware("http")
+async def enforce_same_origin_for_writes(request: Request, call_next):
+    """Reject cross-origin writes and require a token for /api routes."""
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        origin = request.headers.get("origin")
+
+        # Requests without Origin remain possible for CLI clients, but API
+        # requests must still include the KAVACH token.
+        if origin and not _origin_matches_request(origin, request):
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Cross-origin requests are not allowed."},
+            )
+
+    # The health endpoint remains public for local health checks.
+    # Other /api routes require the KAVACH token.
+    if (
+        request.url.path.startswith("/api/")
+        and request.url.path != "/api/health"
+    ):
+        supplied_token = request.headers.get("x-kavach-token", "")
+        expected_token = request.app.state.api_token
+
+        if not secrets.compare_digest(supplied_token, expected_token):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or missing KAVACH API token."},
+            )
+
+    return await call_next(request)
 
 
 # --------------------------------------------------
@@ -199,7 +285,12 @@ def configured_upstream_hostname():
 
 @app.on_event("startup")
 async def report_upstream_configuration():
-    """Log whether the configured upstream passes validation."""
+    """Log API-token availability and upstream configuration status."""
+    if not _configured_api_token:
+        logger.warning(
+            "KAVACH API token (enter in dashboard): %s",
+            API_TOKEN,
+        )
 
     host = configured_upstream_hostname()
 

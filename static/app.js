@@ -1,3 +1,51 @@
+// --------------------------------------------------
+// KAVACH local API authentication
+// --------------------------------------------------
+
+const KAVACH_TOKEN_KEY = "kavachApiToken";
+
+function getKavachApiToken() {
+  let token = sessionStorage.getItem(KAVACH_TOKEN_KEY);
+
+  if (!token) {
+    token = window.prompt(
+      "Enter the KAVACH API token displayed in the server terminal:"
+    );
+
+    if (!token || !token.trim()) {
+      throw new Error("KAVACH API token is required.");
+    }
+
+    token = token.trim();
+    sessionStorage.setItem(KAVACH_TOKEN_KEY, token);
+  }
+
+  return token;
+}
+
+async function apiFetch(url, options = {}) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const headers = new Headers(options.headers || {});
+    headers.set("X-KAVACH-Token", getKavachApiToken());
+
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
+
+    if (response.status !== 401 || attempt === 1) {
+      return response;
+    }
+
+    // The server may have restarted and generated a new token.
+    sessionStorage.removeItem(KAVACH_TOKEN_KEY);
+  }
+}
+
+// ------------------------------------------------------------
+// Sample prompts
+// ------------------------------------------------------------
+
 const SAMPLES = [
   "Customer Demo User (demo.user@example.com, +91 90000 00000) says refund of Rs 4,500 failed. Please reply. Pay them on demo@okaxis. IFSC HDFC0001234.",
   "Bhai mera PAN ABCPE1234F hai aur आधार नंबर २३४५ ६७८९ ०१२३ hai, loan form bhar do.",
@@ -95,7 +143,7 @@ async function run() {
   }
 
   try {
-    const response = await fetch("/api/scan-global", {
+    const response = await apiFetch("/api/scan-global", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -197,7 +245,7 @@ $("file-form").addEventListener("submit", async event => {
   $("file-results").hidden = true;
 
   try {
-    const response = await fetch("/api/scan-file", {
+    const response = await apiFetch("/api/scan-file", {
       method: "POST",
       body: formData
     });
@@ -330,7 +378,7 @@ async function loadAgenticHistory() {
   list.replaceChildren();
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       "/api/agentic/history?limit=10",
       {
         headers: {
@@ -475,7 +523,7 @@ if (agenticButton) {
     results.hidden = true;
 
     try {
-      const response = await fetch("/api/agentic/scan", {
+      const response = await apiFetch("/api/agentic/scan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
