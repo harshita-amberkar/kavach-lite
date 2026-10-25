@@ -36,17 +36,20 @@ _P = [
 _INV = [0, 4, 3, 2, 1, 5, 6, 7, 8, 9]
 _GST = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+
 def verhoeff_valid(num: str) -> bool:
     c = 0
     for i, ch in enumerate(reversed(num)):
         c = _D[c][_P[i % 8][int(ch)]]
     return c == 0
 
+
 def verhoeff_check_digit(num: str) -> str:
     c = 0
     for i, ch in enumerate(reversed(num)):
         c = _D[c][_P[(i + 1) % 8][int(ch)]]
     return str(_INV[c])
+
 
 def luhn_valid(num: str) -> bool:
     total = 0
@@ -57,12 +60,14 @@ def luhn_valid(num: str) -> bool:
         total += n
     return total % 10 == 0
 
+
 def gstin_check_char(first14: str) -> str:
     total = 0
     for i, ch in enumerate(first14):
         v = _GST.index(ch) * (1 if i % 2 == 0 else 2)
         total += v // 36 + v % 36
     return _GST[(36 - total % 36) % 36]
+
 
 # ---------- rules ----------
 
@@ -137,7 +142,7 @@ _RULES = [
     (
         "API_KEY",
         r"""(?i)\b(?:api[_-]?key|secret|token|passwd|password)\b"""
-        r"""\s*[:=]\s*['"]?[^\s'"]{8,}""",
+        r"""\s*[:=]\s*(?:"[^"\r\n]{8,}"|'[^'\r\n]{8,}'|[^\s'"`]{8,})""",
         1,
         None,
         0.85,
@@ -205,7 +210,9 @@ _RULES = [
         "PASSWORD",
         r"(?i)\b(?:password|passcode|passwd|pwd|pin)\s+(?:is|was)\s+[^\s,;]{4,}",
         1,
-        lambda r, t, s: bool(re.search(r"[\d@#$%^&*!_]", r.split()[-1])),
+        lambda r, t, s: bool(
+            re.search(r"[\d@#$%^&*!_]", r.split()[-1])
+        ),
         0.8,
     ),
     (
@@ -244,19 +251,44 @@ _WEIGHT = {
     "PASSWORD": 40,
     "OTP": 30,
     "PASSPORT": 30,
+    "PERSON": 15,
+    "LOCATION": 15,
+    "IBAN": 30,
+    "IP_ADDRESS": 10,
+    "MAC_ADDRESS": 10,
+    "US_SSN": 30,
+    "US_ITIN": 30,
+    "US_DRIVER_LICENSE": 25,
+    "US_PASSPORT": 25,
+    "US_BANK_NUMBER": 25,
+    "UK_NINO": 30,
+    "UK_NHS": 25,
+    "UK_PASSPORT": 25,
+    "AU_ABN": 20,
+    "AU_ACN": 20,
+    "AU_TFN": 30,
+    "AU_MEDICARE": 25,
+    "MEDICAL_INFO": 30,
+    "CONFIDENTIAL_BUSINESS": 25,
+
+    # Additional global information types
+    "CRYPTO": 30,
+    "MEDICAL_LICENSE": 25,
+    "NRP": 25,
 }
 
 # Devanagari digits -> ASCII. This preserves character offsets.
 _DEVA = str.maketrans("०१२३४५६७८९", "0123456789")
 
-@dataclass
 
+@dataclass
 class Finding:
     type: str
     start: int
     end: int
     confidence: float
     value: str = ""
+
 
 def scan(text: str) -> list:
     """Detect sensitive data in text and return non-overlapping findings."""
@@ -281,10 +313,12 @@ def scan(text: str) -> list:
                     continue
 
             hit_name, hit_conf = name, confidence
+
             if name == "AADHAAR":
                 # Suppress Aadhaar-shaped numbers labelled as ordinary IDs.
                 # Explicit Aadhaar context takes precedence over this rule.
                 context = t[max(0, start - 60):start]
+
                 if (
                     _AADHAAR_NEGATIVE_CTX.search(context)
                     and not _CTX.search(context)
@@ -305,6 +339,7 @@ def scan(text: str) -> list:
     hits.sort()
 
     kept = []
+
     for _, _, start, end, name, confidence in hits:
         if all(end <= f.start or start >= f.end for f in kept):
             kept.append(
@@ -319,18 +354,26 @@ def scan(text: str) -> list:
 
     return sorted(kept, key=lambda f: f.start)
 
+
 def mask(text: str, findings: list, mode: str = "label") -> str:
     """Mask findings using labels or partial masking."""
     out = text
 
-    for finding in sorted(findings, key=lambda f: f.start, reverse=True):
+    for finding in sorted(
+        findings,
+        key=lambda f: f.start,
+        reverse=True,
+    ):
         if mode == "partial" and finding.type in (
             "AADHAAR",
             "CARD",
             "PHONE",
         ):
             digits = _digits(finding.value)
-            replacement = "X" * max(len(digits) - 4, 0) + digits[-4:]
+            replacement = (
+                "X" * max(len(digits) - 4, 0)
+                + digits[-4:]
+            )
         else:
             replacement = f"[{finding.type}]"
 
@@ -341,6 +384,7 @@ def mask(text: str, findings: list, mode: str = "label") -> str:
         )
 
     return out
+
 
 def risk(findings: list) -> dict:
     """Calculate an overall risk score and level."""
@@ -357,6 +401,7 @@ def risk(findings: list) -> dict:
     )
 
     return {"score": score, "level": level}
+
 
 def analyze(text: str, mode: str = "label") -> dict:
     """Return findings, masked text, and risk assessment."""

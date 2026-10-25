@@ -35,3 +35,7 @@ README_before_release.md
 # Temporary evaluation backups and broken experiments
 *.backup
 eval/run_broken.py
+
+*.db
+*.sqlite
+*.sqlite3

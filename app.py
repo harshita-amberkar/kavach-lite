@@ -19,8 +19,11 @@ from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
 from kavach import analyze
+from kavach.global_detector import analyze_global
 from kavach.agent import AGENT_ENABLED, review_findings
-
+from kavach.agentic import run_agentic_workflow
+from kavach.audit import list_recent_runs
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 
 # --------------------------------------------------
 # Configuration
@@ -254,6 +257,34 @@ def scan_text(body: ScanIn):
 
     return result
 
+@app.post("/api/scan-global")
+def scan_global_text(body: ScanIn):
+    result = analyze_global(body.text, body.mode)
+
+    if AGENT_ENABLED:
+        result["agent_review"] = review_findings(
+            body.text,
+            result["findings"],
+        )
+
+    return result
+
+@app.post("/api/agentic/scan")
+def scan_agentic(body: ScanIn):
+    return run_agentic_workflow(
+        body.text,
+        body.mode,
+        source="api",
+    )
+
+@app.get("/api/agentic/history")
+def agentic_history(
+    limit: int = Query(default=20, ge=1, le=100)
+):
+    """Return bounded workflow metadata without prompt contents."""
+    return {
+        "runs": list_recent_runs(limit)
+    }
 
 # --------------------------------------------------
 # Scan TXT and PDF documents
@@ -345,12 +376,13 @@ async def scan_file(file: UploadFile = File(...)):
                 ),
             )
 
-        result = analyze(text, mode="label")
+        result = analyze_global(text, mode="label")
 
         return {
             "filename": filename,
             "page_count": page_count,
             "findings": result.get("findings", []),
+            "global_detection": result.get("global_detection", {}),
             "masked_text": result.get("masked_text", ""),
             "risk": result.get("risk", {}),
             "count": len(result.get("findings", [])),

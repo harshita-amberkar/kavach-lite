@@ -17,13 +17,17 @@
   </header>
 
   <main>
+    <!-- Prompt scanner -->
     <section aria-label="Prompt scanner">
       <div class="section-intro">
         <div>
           <h2 class="section-title">Prompt scanner</h2>
           <p class="section-description">Paste text below or try one of the examples.</p>
         </div>
-        <span class="privacy-pill"><span class="privacy-dot"></span> Sensitive text masking</span>
+        <span class="privacy-pill">
+          <span class="privacy-dot"></span>
+          Sensitive text masking
+        </span>
       </div>
 
       <div class="bar">
@@ -70,16 +74,23 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Finding</th><th>Position</th><th>Confidence</th></tr>
+              <tr>
+                <th>Finding</th>
+                <th>Position</th>
+                <th>Confidence</th>
+              </tr>
             </thead>
             <tbody id="rows">
-              <tr><td class="empty" colspan="3">Nothing detected yet.</td></tr>
+              <tr>
+                <td class="empty" colspan="3">Nothing detected yet.</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </section>
     </section>
 
+    <!-- Document scanner -->
     <section class="feature" id="document-scanner">
       <div class="section-intro">
         <div>
@@ -92,7 +103,14 @@
       <section class="pane document-pane">
         <form id="file-form">
           <label for="file-input" class="upload-label">Choose a TXT or PDF file</label>
-          <input class="file-input" id="file-input" name="file" type="file" accept=".txt,.pdf,text/plain,application/pdf" required>
+          <input
+            class="file-input"
+            id="file-input"
+            name="file"
+            type="file"
+            accept=".txt,.pdf,text/plain,application/pdf"
+            required
+          >
           <p class="help">PDFs must contain selectable/extractable text. Scanned-image PDFs are not supported yet.</p>
           <button type="submit" id="scan-file-button" class="button-primary">Scan document</button>
         </form>
@@ -102,22 +120,93 @@
         <div id="file-results" hidden>
           <hr class="result-divider">
           <h3 class="results-title">Document results</h3>
+
           <div class="file-summary">
             <p><strong>File</strong><span id="file-name"></span></p>
             <p><strong>Pages</strong><span id="file-pages"></span></p>
             <p><strong>Findings</strong><span id="file-count"></span></p>
             <p><strong>Risk</strong><span id="file-risk"></span></p>
           </div>
+
           <h4 class="subheading">Detected information</h4>
           <div id="file-findings" class="file-findings"></div>
+
           <div class="result-box">
             <div class="result-heading">Masked document text</div>
             <pre id="file-masked"></pre>
           </div>
+
           <div class="bar download-bar">
             <button type="button" id="download-masked" class="button-primary">Download masked text</button>
           </div>
         </div>
+      </section>
+    </section>
+
+    <!-- Agentic workflow runner -->
+    <section class="feature" id="agentic-runner" aria-labelledby="agentic-runner-title">
+      <div class="section-intro">
+        <div>
+          <h2 class="section-title" id="agentic-runner-title">Agentic Privacy Workflow</h2>
+          <p class="section-description">
+            Run global detection, local AI review, policy-based masking,
+            verification, and SQLite audit recording on the current prompt.
+          </p>
+        </div>
+        <span class="privacy-pill">Local AI review</span>
+      </div>
+
+      <section class="pane">
+        <div class="pane-heading">
+          <span class="step-number">04</span>
+          <h3>Run the workflow</h3>
+        </div>
+
+        <p class="pane-hint">
+          The workflow uses the prompt in the scanner above. Use synthetic
+          examples when testing; do not enter real credentials or personal
+          information.
+        </p>
+
+        <button type="button" id="run-agentic" class="button-primary">
+          Run agentic workflow
+        </button>
+
+        <p id="agentic-run-status" class="message" role="status" aria-live="polite">
+          Ready to run.
+        </p>
+
+        <div id="agentic-results" hidden>
+          <hr class="result-divider">
+          <h3 class="results-title">Workflow result</h3>
+          <pre id="agentic-output"></pre>
+        </div>
+      </section>
+    </section>
+
+    <!-- Agentic workflow history -->
+    <section class="feature" id="agentic-history" aria-labelledby="agentic-history-title">
+      <div class="section-intro">
+        <div>
+          <h2 class="section-title" id="agentic-history-title">Agentic Workflow History</h2>
+          <p class="section-description">
+            Review recent workflow runs, risk levels, verification results,
+            and required human reviews.
+          </p>
+        </div>
+      </div>
+
+      <section class="pane">
+        <div class="history-toolbar">
+          <button type="button" id="refresh-history" class="button-primary">
+            Refresh history
+          </button>
+          <p id="history-status" class="message" role="status" aria-live="polite">
+            Loading workflow history...
+          </p>
+        </div>
+
+        <div id="history-list" class="workflow-history-list" aria-live="polite"></div>
       </section>
     </section>
   </main>

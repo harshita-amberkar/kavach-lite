@@ -6,7 +6,8 @@ KAVACH is a development project, not a guarantee that every sensitive value or d
 
 ## Features
 
-- **Sensitive-data detection:** configured recognizers for Aadhaar, PAN, phone numbers, payment-card numbers, email addresses, UPI IDs, GSTIN, IFSC, and supported secrets.
+- **Sensitive-data detection:** configured recognizers for Aadhaar, PAN, phone numbers
+, payment-card numbers, email addresses, UPI IDs, GSTIN, IFSC, and supported secrets.
 - **Checksum/context checks:** Aadhaar Verhoeff, GSTIN check-character, and card Luhn validation help reduce certain false positives.
 - **Masking and risk scoring:** scan responses include finding types, character offsets, confidence scores, masked text, and a risk assessment.
 - **Chrome extension:** prompt scanning and configurable allow, warn, mask, and block actions for ChatGPT, Claude, and Gemini. Website UI changes can affect compatibility.
