@@ -37,14 +37,10 @@ async function apiFetch(url, options = {}) {
       return response;
     }
 
-    // The server may have restarted and generated a new token.
+    // A local server restart can rotate a generated session token.
     sessionStorage.removeItem(KAVACH_TOKEN_KEY);
   }
 }
-
-// ------------------------------------------------------------
-// Sample prompts
-// ------------------------------------------------------------
 
 const SAMPLES = [
   "Customer Demo User (demo.user@example.com, +91 90000 00000) says refund of Rs 4,500 failed. Please reply. Pay them on demo@okaxis. IFSC HDFC0001234.",
@@ -491,8 +487,266 @@ $("refresh-history")?.addEventListener(
 loadAgenticHistory();
 
 // ------------------------------------------------------------
-// Agentic privacy workflow runner
+// Agentic privacy workflow runner — user-friendly results
 // ------------------------------------------------------------
+
+function friendlyStatus(value, fallback = "Not reported") {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim().toLowerCase();
+  }
+  if (value && typeof value === "object") {
+    if (typeof value.status === "string" && value.status.trim()) {
+      return value.status.trim().toLowerCase();
+    }
+    if (typeof value.verification_status === "string") {
+      return value.verification_status.trim().toLowerCase();
+    }
+    if (typeof value.passed === "boolean") {
+      return value.passed ? "passed" : "not passed";
+    }
+    if (typeof value.verified === "boolean") {
+      return value.verified ? "passed" : "not passed";
+    }
+  }
+  return fallback;
+}
+
+function humanizeWorkflowStep(name) {
+  const labels = {
+    global_scan: "Sensitive information scan",
+    local_ai_review: "AI-assisted review",
+    policy_masking: "Mask sensitive information",
+    masking: "Mask sensitive information",
+    verification: "Check the protected prompt",
+    audit: "Save workflow record"
+  };
+  const key = String(name || "").toLowerCase().replace(/[ -]+/g, "_");
+  return labels[key] || key.replace(/_/g, " ").replace(/^\w/, c => c.toUpperCase()) || "Workflow step";
+}
+
+function statusKind(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (["passed", "completed", "complete", "ok", "success", "succeeded", "verified", "saved", "recorded", "inserted"].includes(normalized)) return "success";
+  if (["failed", "error", "blocked", "unavailable", "not passed"].includes(normalized)) return "warning";
+  return "neutral";
+}
+
+function displayStatusLabel(value) {
+  const normalized = String(value || "not reported").trim().toLowerCase();
+  const labels = {
+    ok: "Completed",
+    success: "Completed",
+    succeeded: "Completed",
+    completed: "Completed",
+    complete: "Completed",
+    passed: "Passed",
+    verified: "Verified",
+    disabled: "Turned off",
+    unavailable: "Unavailable",
+    error: "Unavailable",
+    failed: "Needs attention",
+    blocked: "Blocked",
+    "not passed": "Needs attention",
+    "not reported": "Not reported",
+    skipped: "Skipped",
+    saved: "Saved",
+    recorded: "Saved",
+    inserted: "Saved",
+    "not required": "Not required"
+  };
+  return labels[normalized] || normalized.replace(/_/g, " ").replace(/^\w/, c => c.toUpperCase());
+}
+
+function createElement(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined && text !== null) element.textContent = String(text);
+  return element;
+}
+
+function getAgenticResultsView(results, output) {
+  output.hidden = true;
+  let view = results.querySelector(".agentic-friendly-results");
+  if (!view) {
+    view = createElement("div", "agentic-friendly-results");
+    output.insertAdjacentElement("afterend", view);
+  }
+  return view;
+}
+
+function addResultStatus(parent, label, value, detail = "") {
+  const row = createElement("div", "agentic-status-row");
+  const left = createElement("div", "agentic-status-copy");
+  left.appendChild(createElement("strong", "", label));
+  if (detail) left.appendChild(createElement("small", "", detail));
+  const status = createElement("span", `agentic-status-pill ${statusKind(value)}`, displayStatusLabel(value));
+  row.append(left, status);
+  parent.appendChild(row);
+}
+
+function renderAgenticResults(data, results, output) {
+  const view = getAgenticResultsView(results, output);
+  view.replaceChildren();
+
+  const findings = Array.isArray(data.findings) ? data.findings : [];
+  const risk = data.risk && typeof data.risk === "object" ? data.risk : {};
+  const riskLevel = String(risk.level || "unknown").toLowerCase();
+  const riskScore = typeof risk.score === "number" ? risk.score : null;
+  const agentReview = data.agent_review && typeof data.agent_review === "object"
+    ? data.agent_review
+    : { status: "disabled", reviews: [] };
+  const reviews = Array.isArray(agentReview.reviews) ? agentReview.reviews : [];
+  const verificationStatus = friendlyStatus(data.verification, "not reported");
+  const auditStatus = friendlyStatus(data.audit, "not reported");
+  const overallStatus = friendlyStatus(data.status, "completed");
+  const requiresHumanReview = data.requires_human_review === true;
+
+  // High-level outcome: readable language instead of a JSON dump.
+  const summary = createElement("section", "agentic-summary-card");
+  const summaryTop = createElement("div", "agentic-summary-top");
+  const summaryCopy = createElement("div", "agentic-summary-copy");
+  summaryCopy.appendChild(createElement("p", "agentic-summary-eyebrow", "YOUR PRIVACY CHECK"));
+  summaryCopy.appendChild(createElement("h3", "agentic-summary-title", "Workflow results"));
+  const summaryText = findings.length === 0
+    ? "KAVACH did not find any supported sensitive patterns in this prompt."
+    : `KAVACH found ${findings.length} potential sensitive ${findings.length === 1 ? "item" : "items"} and prepared a protected version.`;
+  summaryCopy.appendChild(createElement("p", "agentic-summary-description", summaryText));
+  const statusBadge = createElement("span", `agentic-overall-badge ${statusKind(overallStatus)}`, displayStatusLabel(overallStatus));
+  summaryTop.append(summaryCopy, statusBadge);
+  summary.appendChild(summaryTop);
+
+  const metrics = createElement("div", "agentic-metrics");
+  const metricItems = [
+    ["Sensitive items", String(findings.length)],
+    ["Risk level", riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)],
+    ["Risk score", riskScore === null ? "Not reported" : String(riskScore)]
+  ];
+  metricItems.forEach(([label, value]) => {
+    const metric = createElement("div", "agentic-metric");
+    metric.appendChild(createElement("span", "", label));
+    metric.appendChild(createElement("strong", "", value));
+    metrics.appendChild(metric);
+  });
+  summary.appendChild(metrics);
+  view.appendChild(summary);
+
+  // Summarize the stages the server actually reports; do not invent progress.
+  const stages = createElement("section", "agentic-friendly-section");
+  stages.appendChild(createElement("h4", "agentic-friendly-heading", "What KAVACH did"));
+  const stageList = createElement("div", "agentic-status-list");
+  const steps = Array.isArray(data.steps) ? data.steps : [];
+  if (steps.length) {
+    steps.forEach(step => {
+      const name = typeof step === "string" ? step : (step.name || step.step || "Workflow step");
+      const stepStatus = typeof step === "string" ? "completed" : friendlyStatus(step.status, "not reported");
+      const notes = typeof step === "object" ? (step.detail || step.message || "") : "";
+      addResultStatus(stageList, humanizeWorkflowStep(name), stepStatus, notes);
+    });
+  } else {
+    addResultStatus(stageList, "Sensitive information scan", "completed");
+    addResultStatus(stageList, "AI-assisted review", friendlyStatus(agentReview.status, "not reported"));
+    addResultStatus(stageList, "Masking and verification", verificationStatus);
+  }
+  stages.appendChild(stageList);
+  view.appendChild(stages);
+
+  // Explain local AI availability and its advisory-only role.
+  const reviewPanel = createElement("section", "agentic-review-panel");
+  const reviewHeading = createElement("div", "agentic-review-heading");
+  const reviewTitleBlock = createElement("div", "");
+  reviewTitleBlock.appendChild(createElement("h4", "agentic-friendly-heading", "AI-assisted review"));
+  reviewTitleBlock.appendChild(createElement("p", "agentic-review-subtitle", "The local model provides advice; KAVACH's detector controls the findings and masking."));
+  reviewHeading.appendChild(reviewTitleBlock);
+  reviewHeading.appendChild(createElement("span", `agentic-status-pill ${statusKind(friendlyStatus(agentReview.status, "not reported"))}`, displayStatusLabel(friendlyStatus(agentReview.status, "not reported"))));
+  reviewPanel.appendChild(reviewHeading);
+
+  const reviewStatus = friendlyStatus(agentReview.status, "not reported");
+  let reviewSummary;
+  if (reviewStatus === "ok" || reviewStatus === "success" || reviewStatus === "completed") {
+    reviewSummary = reviews.length
+      ? `Local AI review returned ${reviews.length} advisory ${reviews.length === 1 ? "assessment" : "assessments"}.`
+      : "The local AI review completed without returning individual assessments.";
+  } else if (reviewStatus === "disabled") {
+    reviewSummary = "AI review is switched off. KAVACH can still scan and mask using its detection rules.";
+  } else if (reviewStatus === "unavailable" || reviewStatus === "error" || reviewStatus === "failed") {
+    reviewSummary = "The local AI reviewer was not available for this run. Treat the detector's result as the protection output and review uncertain items yourself.";
+  } else {
+    reviewSummary = "The AI review status was not reported. This review is advisory and must not be treated as a guarantee.";
+  }
+  reviewPanel.appendChild(createElement("p", "agentic-review-summary", reviewSummary));
+
+  if (reviews.length) {
+    const reviewList = createElement("div", "agentic-individual-reviews");
+    reviews.forEach((review, index) => {
+      const card = createElement("article", "agentic-review-item");
+      const assessment = String(review.assessment || "assessment").replace(/_/g, " ");
+      card.appendChild(createElement("strong", "", `Assessment ${index + 1}: ${assessment}`));
+      if (review.reason) card.appendChild(createElement("p", "", review.reason));
+      reviewList.appendChild(card);
+    });
+    reviewPanel.appendChild(reviewList);
+  }
+  view.appendChild(reviewPanel);
+
+  // Show only the protected text, never the unmasked original prompt.
+  const protectedPanel = createElement("section", "agentic-protected-panel");
+  const protectedTop = createElement("div", "agentic-protected-top");
+  const protectedHeading = createElement("div", "");
+  protectedHeading.appendChild(createElement("h4", "agentic-friendly-heading", "Protected prompt"));
+  protectedHeading.appendChild(createElement("p", "agentic-review-subtitle", "Copy this masked version into your AI tool after reviewing it."));
+  protectedTop.appendChild(protectedHeading);
+  const maskedText = typeof data.masked_text === "string" ? data.masked_text : "";
+  const copyButton = createElement("button", "button button-primary agentic-copy-button", "Copy protected prompt");
+  copyButton.type = "button";
+  copyButton.disabled = !maskedText;
+  protectedTop.appendChild(copyButton);
+  protectedPanel.appendChild(protectedTop);
+  const maskedBox = createElement("div", "agentic-protected-text", maskedText || "No protected text was returned by the workflow.");
+  maskedBox.setAttribute("aria-label", "Protected prompt text");
+  protectedPanel.appendChild(maskedBox);
+  const copyFeedback = createElement("p", "agentic-copy-feedback");
+  copyFeedback.setAttribute("aria-live", "polite");
+  protectedPanel.appendChild(copyFeedback);
+  copyButton.addEventListener("click", async () => {
+    if (!maskedText) return;
+    try {
+      await navigator.clipboard.writeText(maskedText);
+      copyFeedback.textContent = "Protected prompt copied. Review it before pasting into your AI tool.";
+    } catch {
+      const temporary = createElement("textarea", "agentic-copy-fallback");
+      temporary.value = maskedText;
+      temporary.setAttribute("readonly", "");
+      document.body.appendChild(temporary);
+      temporary.select();
+      let copied = false;
+      try { copied = document.execCommand("copy"); } catch { copied = false; }
+      temporary.remove();
+      copyFeedback.textContent = copied
+        ? "Protected prompt copied. Review it before pasting into your AI tool."
+        : "Copy was blocked by the browser. Select the protected prompt text and copy it manually.";
+    }
+  });
+  view.appendChild(protectedPanel);
+
+  // Verification, audit, and human review in plain language.
+  const safetyFooter = createElement("section", "agentic-final-checks");
+  addResultStatus(safetyFooter, "Masking verification", verificationStatus,
+    verificationStatus === "passed" ? "The workflow reports that verification passed." : "Review the protected prompt if the status is uncertain.");
+  addResultStatus(safetyFooter, "Workflow record", auditStatus,
+    auditStatus === "saved" || auditStatus === "ok" || auditStatus === "completed" ? "Workflow metadata was recorded." : "Audit status is reported by the server.");
+  if (requiresHumanReview) {
+    const notice = createElement("div", "agentic-human-review-notice");
+    notice.appendChild(createElement("strong", "", "Human review recommended"));
+    notice.appendChild(createElement("p", "", "KAVACH flagged this run for a person to review. Check the detected items and protected prompt before using it."));
+    safetyFooter.appendChild(notice);
+  } else {
+    const notice = createElement("div", "agentic-human-review-ok");
+    notice.appendChild(createElement("strong", "", "No additional human-review flag"));
+    notice.appendChild(createElement("p", "", "This does not guarantee that every sensitive value was detected. Review the protected prompt before sharing it."));
+    safetyFooter.appendChild(notice);
+  }
+  view.appendChild(safetyFooter);
+}
 
 const agenticButton = $("run-agentic");
 
@@ -503,108 +757,50 @@ if (agenticButton) {
     const results = $("agentic-results");
     const output = $("agentic-output");
 
-    if (!input || !status || !results || !output) {
-      return;
-    }
+    if (!input || !status || !results || !output) return;
 
     const text = input.value;
-
     if (!text.trim()) {
-      status.textContent =
-        "Enter a prompt in the scanner first.";
+      status.textContent = "Enter a prompt in the scanner first.";
+      input.focus();
       return;
     }
 
     agenticButton.disabled = true;
-
-    status.textContent =
-      "Running global detection, AI review, masking and verification...";
-
+    status.textContent = "KAVACH is scanning, reviewing, masking, and checking the protected prompt…";
     results.hidden = true;
 
     try {
       const response = await apiFetch("/api/agentic/scan", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          text,
-          mode: "label"
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, mode: "label" })
       });
 
       let data;
-
       try {
         data = await response.json();
       } catch {
-        throw new Error(
-          "The server returned an unexpected response."
-        );
+        throw new Error("The server returned an unexpected response.");
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.detail || "Agentic workflow failed."
-        );
+        throw new Error(data.detail || "The privacy workflow could not be completed.");
       }
 
-      // Display only the information required by the dashboard.
-      // No original prompt or raw sensitive values are displayed
-      // as part of the audit-history metadata.
-      const display = {
-        workflow: data.workflow,
-        status: data.status,
-
-        findings: (data.findings || []).map(finding => ({
-          type: finding.type,
-          confidence: finding.confidence,
-          start: finding.start,
-          end: finding.end
-        })),
-
-        masked_text: data.masked_text,
-        risk: data.risk,
-        global_detection: data.global_detection,
-
-        agent_review: {
-          status: data.agent_review?.status,
-
-          reviews: (
-            data.agent_review?.reviews || []
-          ).map(review => ({
-            assessment: review.assessment,
-            reason: review.reason
-          }))
-        },
-
-        verification: data.verification,
-        audit: data.audit,
-        requires_human_review: data.requires_human_review,
-        steps: data.steps
-      };
-
-      output.textContent = JSON.stringify(
-        display,
-        null,
-        2
-      );
-
+      renderAgenticResults(data, results, output);
       results.hidden = false;
 
-      status.textContent =
-        `Workflow ${data.status || "finished"}. ` +
-        `Audit: ${data.audit?.status || "unknown"}.`;
+      const reviewStatus = friendlyStatus(data.agent_review?.status, "not reported");
+      status.textContent = data.requires_human_review === true
+        ? "Workflow finished. Please review the findings before using the prompt."
+        : reviewStatus === "unavailable" || reviewStatus === "disabled"
+          ? "Workflow finished. The local AI review was not active; please review the protected prompt."
+          : "Workflow finished. Review the protected prompt before using it.";
 
-      // Refresh persisted workflow metadata.
       await loadAgenticHistory();
-
     } catch (error) {
-      status.textContent =
-        error.message ||
-        "Could not run the agentic workflow.";
-
+      status.textContent = error.message || "Could not run the privacy workflow.";
     } finally {
       agenticButton.disabled = false;
     }
