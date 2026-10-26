@@ -8,7 +8,7 @@ Gold file: `eval/gold/gold.txt`
 Negative-prompt false-alarm rate: 0.0%
 Negative prompts flagged: 0/20
 False-positive entities on negative prompts: 0
-Latency p50: 0.038 ms; p95: 0.076 ms
+Latency p50: 0.041 ms; p95: 0.078 ms
 
 | Type | Precision | Recall | F1 |
 |---|---:|---:|---:|
@@ -27,7 +27,7 @@ Latency p50: 0.038 ms; p95: 0.076 ms
 Negative-prompt false-alarm rate: 0.0%
 Negative prompts flagged: 0/20
 False-positive entities on negative prompts: 0
-Latency p50: 0.035 ms; p95: 0.066 ms
+Latency p50: 0.039 ms; p95: 0.073 ms
 
 | Type | Precision | Recall | F1 |
 |---|---:|---:|---:|
@@ -46,7 +46,7 @@ Latency p50: 0.035 ms; p95: 0.066 ms
 Negative-prompt false-alarm rate: 40.0%
 Negative prompts flagged: 8/20
 False-positive entities on negative prompts: 8
-Latency p50: 0.021 ms; p95: 0.037 ms
+Latency p50: 0.023 ms; p95: 0.041 ms
 
 | Type | Precision | Recall | F1 |
 |---|---:|---:|---:|
@@ -65,7 +65,7 @@ Latency p50: 0.021 ms; p95: 0.037 ms
 Negative-prompt false-alarm rate: 35.0%
 Negative prompts flagged: 7/20
 False-positive entities on negative prompts: 7
-Latency p50: 6.518 ms; p95: 16.082 ms
+Latency p50: 7.448 ms; p95: 24.457 ms
 
 | Type | Precision | Recall | F1 |
 |---|---:|---:|---:|
@@ -84,7 +84,7 @@ Latency p50: 6.518 ms; p95: 16.082 ms
 Negative-prompt false-alarm rate: 35.0%
 Negative prompts flagged: 7/20
 False-positive entities on negative prompts: 7
-Latency p50: 6.458 ms; p95: 7.909 ms
+Latency p50: 6.482 ms; p95: 8.491 ms
 
 | Type | Precision | Recall | F1 |
 |---|---:|---:|---:|
@@ -103,7 +103,7 @@ Latency p50: 6.458 ms; p95: 7.909 ms
 Negative-prompt false-alarm rate: 35.0%
 Negative prompts flagged: 7/20
 False-positive entities on negative prompts: 7
-Latency p50: 6.092 ms; p95: 7.319 ms
+Latency p50: 6.486 ms; p95: 8.406 ms
 
 | Type | Precision | Recall | F1 |
 |---|---:|---:|---:|

@@ -1,4 +1,3 @@
-
 """Evaluate detection systems on synthetic or hand-written gold prompts.
 
 Examples:
@@ -8,6 +7,7 @@ Examples:
     python -m eval.run --gold-file eval/gold/gold_hidden.txt
 
 Writes results/report.md, report.json and errors.jsonl.
+Error records contain metadata and offsets, not raw prompt contents.
 """
 
 import argparse
@@ -17,11 +17,45 @@ import statistics
 import time
 from collections import defaultdict
 from pathlib import Path
+
 from .gen import generate
 from .systems import available
 
+
 SHARED = {"AADHAAR", "PAN", "PHONE", "CARD", "EMAIL"}
 DEFAULT_GOLD = "eval/gold/gold.txt"
+
+
+def _error_record(
+    system,
+    kind,
+    row,
+    *,
+    expected_type,
+    predicted_type,
+    expected_span=None,
+    predicted_span=None,
+):
+    """Build error metadata without storing prompt or entity values."""
+    return {
+        "system": system,
+        "kind": kind,
+        "id": row.get("id"),
+        "lang": row.get("lang"),
+        "tag": row.get("tag"),
+        "expected_type": expected_type,
+        "predicted_type": predicted_type,
+        "expected_span": (
+            list(expected_span)
+            if expected_span is not None
+            else None
+        ),
+        "predicted_span": (
+            list(predicted_span)
+            if predicted_span is not None
+            else None
+        ),
+    }
 
 
 def match(p, g):
@@ -37,11 +71,13 @@ def prf(tp, fp, fn):
     """Return precision, recall and F1; None means undefined."""
     precision = tp / (tp + fp) if tp + fp else None
     recall = tp / (tp + fn) if tp + fn else None
+
     f1 = (
         2 * tp / (2 * tp + fp + fn)
         if tp + fn
         else None
     )
+
     return precision, recall, f1
 
 
@@ -56,6 +92,7 @@ def evaluate(rows, fn, name="", cache=None):
     tp = defaultdict(int)
     fp = defaultdict(int)
     fn_ = defaultdict(int)
+
     lat = []
     neg = 0
     neg_hit = 0
@@ -83,7 +120,8 @@ def evaluate(rows, fn, name="", cache=None):
         for g in r["entities"]:
             hit = next(
                 (
-                    i for i, p in enumerate(preds)
+                    i
+                    for i, p in enumerate(preds)
                     if i not in used and match(p, g)
                 ),
                 None,
@@ -91,15 +129,18 @@ def evaluate(rows, fn, name="", cache=None):
 
             if hit is None:
                 fn_[g["type"]] += 1
-                errs.append({
-                    "system": name,
-                    "kind": "FN",
-                    "id": r.get("id"),
-                    "lang": r["lang"],
-                    "tag": r.get("tag"),
-                    "text": r["text"],
-                    "gold": g,
-                })
+
+                # Record the missing entity's type and offsets only.
+                errs.append(
+                    _error_record(
+                        name,
+                        "FN",
+                        r,
+                        expected_type=g["type"],
+                        predicted_type=None,
+                        expected_span=(g["start"], g["end"]),
+                    )
+                )
             else:
                 tp[g["type"]] += 1
                 used.add(hit)
@@ -107,18 +148,22 @@ def evaluate(rows, fn, name="", cache=None):
         for i, p in enumerate(preds):
             if i not in used:
                 fp[p[0]] += 1
-                errs.append({
-                    "system": name,
-                    "kind": "FP",
-                    "id": r.get("id"),
-                    "lang": r["lang"],
-                    "tag": r.get("tag"),
-                    "text": r["text"],
-                    "pred": p,
-                })
+
+                # Record the unmatched prediction's type and offsets.
+                errs.append(
+                    _error_record(
+                        name,
+                        "FP",
+                        r,
+                        expected_type=None,
+                        predicted_type=p[0],
+                        predicted_span=(p[1], p[2]),
+                    )
+                )
 
         if is_neg:
             neg += 1
+
             if preds:
                 neg_hit += 1
                 neg_fp_entities += len(preds)
@@ -152,9 +197,10 @@ def evaluate(rows, fn, name="", cache=None):
         "negative_prompts": neg,
         "negative_prompt_false_alarms": neg_hit,
         "negative_false_positive_entities": neg_fp_entities,
-        "gold_counts": dict(
-            (t, tp[t] + fn_[t]) for t in types
-        ),
+        "gold_counts": {
+            t: tp[t] + fn_[t]
+            for t in types
+        },
     }
 
     return (
@@ -173,6 +219,7 @@ def append_metrics_table(md, metrics):
 
     for entity_type, values in metrics.items():
         p, r, f1 = values
+
         md.append(
             f"| {entity_type} | {fmt(p)} | {fmt(r)} | {fmt(f1)} |"
         )
@@ -182,17 +229,21 @@ def main():
     ap = argparse.ArgumentParser(
         description="Evaluate Kavach and baseline detectors."
     )
+
     ap.add_argument("--n", type=int, default=600)
+
     ap.add_argument(
         "--split",
         choices=("test", "dev", "all"),
         default="test",
     )
+
     ap.add_argument(
         "--gold",
         action="store_true",
         help="Legacy alias for --gold-file eval/gold/gold.txt",
     )
+
     ap.add_argument(
         "--gold-file",
         default=None,
@@ -204,11 +255,15 @@ def main():
         default=None,
         help="Path to a generated JSONL dataset file.",
     )
+
     a = ap.parse_args()
 
     gold_mode = a.gold or a.gold_file is not None
+
     if gold_mode and a.dataset_file:
-        ap.error("--gold/--gold-file cannot be combined with --dataset-file")
+        ap.error(
+            "--gold/--gold-file cannot be combined with --dataset-file"
+        )
 
     if gold_mode:
         from .gold import load
@@ -216,15 +271,29 @@ def main():
         gold_path = a.gold_file or DEFAULT_GOLD
         rows = load(path=gold_path, split="test")
         a.split = "all"
+
     elif a.dataset_file:
         with Path(a.dataset_file).open("r", encoding="utf-8") as f:
-            rows = [json.loads(line) for line in f if line.strip()]
+            rows = [
+                json.loads(line)
+                for line in f
+                if line.strip()
+            ]
+
         if a.split != "all":
-            rows = [r for r in rows if r.get("split") == a.split]
+            rows = [
+                r for r in rows
+                if r.get("split") == a.split
+            ]
+
     else:
         rows = generate(a.n)
+
         if a.split != "all":
-            rows = [r for r in rows if r["split"] == a.split]
+            rows = [
+                r for r in rows
+                if r["split"] == a.split
+            ]
 
     dataset_mode = (
         "hand-written gold" if gold_mode
@@ -244,8 +313,16 @@ def main():
         md.append(f"Gold file: `{a.gold_file or DEFAULT_GOLD}`")
 
     js = {
-        "dataset_mode": "gold" if gold_mode else "jsonl" if a.dataset_file else "synthetic",
-        "gold_file": (a.gold_file or DEFAULT_GOLD) if gold_mode else None,
+        "dataset_mode": (
+            "gold" if gold_mode
+            else "jsonl" if a.dataset_file
+            else "synthetic"
+        ),
+        "gold_file": (
+            (a.gold_file or DEFAULT_GOLD)
+            if gold_mode
+            else None
+        ),
         "dataset_file": a.dataset_file,
         "prompt_count": len(rows),
         "split": a.split,
@@ -255,14 +332,16 @@ def main():
     allerrs = []
     systems = available()
     caches = {name: {} for name in systems}
-    evaluated = {}
 
     # Main metrics for each detector.
     for name, detector in systems.items():
         res, fpr, p50, p95, errs, details = evaluate(
-            rows, detector, name, caches[name]
+            rows,
+            detector,
+            name,
+            caches[name],
         )
-        evaluated[name] = (res, details)
+
         allerrs.extend(errs)
 
         js["systems"][name] = {
@@ -288,7 +367,7 @@ def main():
                 else "Negative prompts flagged: n/a (no negative prompts)"
             ),
             (
-                f"False-positive entities on negative prompts: "
+                "False-positive entities on negative prompts: "
                 f"{details['negative_false_positive_entities']}"
             ),
             f"Latency p50: {p50:.3f} ms; p95: {p95:.3f} ms",
@@ -305,14 +384,25 @@ def main():
         js["tag_results"] = {}
 
         for tag in ("real", "tricky", "neg"):
-            subset = [r for r in rows if r.get("tag") == tag]
+            subset = [
+                r for r in rows
+                if r.get("tag") == tag
+            ]
 
             if not subset:
-                md.extend(["", f"## {tag}", "No prompts in this slice."])
+                md.extend([
+                    "",
+                    f"## {tag}",
+                    "No prompts in this slice.",
+                ])
+
                 js["tag_results"][tag] = {"prompt_count": 0}
                 continue
 
-            md.extend(["", f"## {tag} ({len(subset)} prompts)"])
+            md.extend([
+                "",
+                f"## {tag} ({len(subset)} prompts)",
+            ])
 
             js["tag_results"][tag] = {
                 "prompt_count": len(subset),
@@ -321,7 +411,10 @@ def main():
 
             for name, detector in systems.items():
                 res, fpr, _, _, _, details = evaluate(
-                    subset, detector, name, caches[name]
+                    subset,
+                    detector,
+                    name,
+                    caches[name],
                 )
 
                 if tag == "neg":
@@ -333,18 +426,23 @@ def main():
                     rate_text = (
                         "n/a" if fpr is None else f"{fpr:.1%}"
                     )
+
                     md.append(
-                        f"- **{name}:** {details['negative_prompt_false_alarms']}/"
+                        f"- **{name}:** "
+                        f"{details['negative_prompt_false_alarms']}/"
                         f"{details['negative_prompts']} prompts flagged "
                         f"({rate_text}); "
                         f"{details['negative_false_positive_entities']} "
-                        f"false-positive entities"
+                        "false-positive entities"
                     )
+
                 else:
                     js["tag_results"][tag]["systems"][name] = {
                         "metrics": res,
                     }
+
                     p, r, f1 = res["MICRO_ALL"]
+
                     md.append(
                         f"- **{name}:** MICRO_ALL "
                         f"P={fmt(p)}, R={fmt(r)}, F1={fmt(f1)}"
@@ -355,7 +453,10 @@ def main():
     js["language_results"] = {}
 
     for lang in ("en", "hi", "mr", "hinglish", "mr_en"):
-        subset = [r for r in rows if r["lang"] == lang]
+        subset = [
+            r for r in rows
+            if r["lang"] == lang
+        ]
 
         if not subset:
             continue
@@ -369,8 +470,12 @@ def main():
 
         for name, detector in systems.items():
             res, _, _, _, _, _ = evaluate(
-                subset, detector, name, caches[name]
+                subset,
+                detector,
+                name,
+                caches[name],
             )
+
             p, r, f1 = res["MICRO_SHARED"]
 
             js["language_results"][lang][name] = {
@@ -395,11 +500,14 @@ def main():
                 for e in allerrs
             )
         )
+
         if allerrs:
             f.write("\n")
 
     print("\n".join(md))
-    print(f"\n{len(allerrs)} errors written to results/errors.jsonl")
+    print(
+        f"\n{len(allerrs)} errors written to results/errors.jsonl"
+    )
 
 
 if __name__ == "__main__":

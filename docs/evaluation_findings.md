@@ -20,8 +20,8 @@ the local environment used for the benchmark.
 | Micro F1 | 1.00 |
 | Negative prompts flagged | 0/20 |
 | Negative-prompt false-alarm rate | 0.0% |
-| Median latency (p50) | 0.038 ms |
-| 95th-percentile latency (p95) | 0.076 ms |
+| Median latency (p50) | 0.041 ms |
+| 95th-percentile latency (p95) | 0.078 ms |
 
 The benchmark reported precision, recall, and F1 of 1.00 for
 the listed Aadhaar, card, email, GSTIN, PAN, phone, and UPI
@@ -31,12 +31,12 @@ categories.
 
 | System | Micro F1 | Negative false-alarm rate | p50 latency |
 |---|---:|---:|---:|
-| KAVACH | 1.00 | 0.0% | 0.038 ms |
-| KAVACH block mode | 1.00 | 0.0% | 0.035 ms |
-| Regex only | 0.75 | 40.0% | 0.021 ms |
-| Presidio | 0.73 | 35.0% | 6.518 ms |
-| Presidio custom | 0.89 | 35.0% | 6.458 ms |
-| Presidio normalized | 0.90 | 35.0% | 6.092 ms |
+| KAVACH | 1.00 | 0.0% | 0.041 ms |
+| KAVACH block mode | 1.00 | 0.0% | 0.039 ms |
+| Regex only | 0.75 | 40.0% | 0.023 ms |
+| Presidio | 0.73 | 35.0% | 7.448 ms |
+| Presidio custom | 0.89 | 35.0% | 6.482 ms |
+| Presidio normalized | 0.90 | 35.0% | 6.486 ms |
 
 These measurements describe this benchmark only. They do not
 establish production-wide superiority over the comparison systems.
