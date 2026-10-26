@@ -1,0 +1,1301 @@
+{
+  "dataset_mode": "gold",
+  "gold_file": "eval/gold/gold_holdout.txt",
+  "dataset_file": null,
+  "prompt_count": 43,
+  "split": "all",
+  "systems": {
+    "kavach": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "neg_false_alarm_rate": 0.0,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 0,
+        "negative_false_positive_entities": 0,
+        "gold_counts": {
+          "AADHAAR": 3,
+          "API_KEY": 2,
+          "CARD": 3,
+          "EMAIL": 3,
+          "IFSC": 3,
+          "PAN": 3,
+          "PHONE": 3,
+          "UPI_ID": 3
+        }
+      },
+      "p50_ms": 0.03079999987676274,
+      "p95_ms": 0.051699999858101364
+    },
+    "kavach_block": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "neg_false_alarm_rate": 0.0,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 0,
+        "negative_false_positive_entities": 0,
+        "gold_counts": {
+          "AADHAAR": 3,
+          "API_KEY": 2,
+          "CARD": 3,
+          "EMAIL": 3,
+          "IFSC": 3,
+          "PAN": 3,
+          "PHONE": 3,
+          "UPI_ID": 3
+        }
+      },
+      "p50_ms": 0.02970000059576705,
+      "p95_ms": 0.0397000003431458
+    },
+    "regex_only": {
+      "metrics": {
+        "AADHAAR": [
+          0.42857142857142855,
+          1.0,
+          0.6
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ],
+        "PHONE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "UPI_ID": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "MICRO_ALL": [
+          0.6521739130434783,
+          0.6521739130434783,
+          0.6521739130434783
+        ],
+        "MICRO_SHARED": [
+          0.7058823529411765,
+          0.8,
+          0.75
+        ]
+      },
+      "neg_false_alarm_rate": 0.25,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 5,
+        "negative_false_positive_entities": 5,
+        "gold_counts": {
+          "AADHAAR": 3,
+          "API_KEY": 2,
+          "CARD": 3,
+          "EMAIL": 3,
+          "IFSC": 3,
+          "PAN": 3,
+          "PHONE": 3,
+          "UPI_ID": 3
+        }
+      },
+      "p50_ms": 0.02010000025620684,
+      "p95_ms": 0.026100000468431972
+    },
+    "presidio": {
+      "metrics": {
+        "AADHAAR": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.9375,
+          0.6521739130434783,
+          0.7692307692307693
+        ],
+        "MICRO_SHARED": [
+          0.9375,
+          1.0,
+          0.967741935483871
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 3,
+          "API_KEY": 2,
+          "CARD": 3,
+          "EMAIL": 3,
+          "IFSC": 3,
+          "PAN": 3,
+          "PHONE": 3,
+          "UPI_ID": 3
+        }
+      },
+      "p50_ms": 6.283499999881315,
+      "p95_ms": 9.135700000115321
+    },
+    "presidio_custom": {
+      "metrics": {
+        "AADHAAR": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          0.9473684210526315,
+          0.782608695652174,
+          0.8571428571428571
+        ],
+        "MICRO_SHARED": [
+          0.9375,
+          1.0,
+          0.967741935483871
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 3,
+          "API_KEY": 2,
+          "CARD": 3,
+          "EMAIL": 3,
+          "IFSC": 3,
+          "PAN": 3,
+          "PHONE": 3,
+          "UPI_ID": 3
+        }
+      },
+      "p50_ms": 6.471399999099958,
+      "p95_ms": 8.911500000067463
+    },
+    "presidio_norm": {
+      "metrics": {
+        "AADHAAR": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          0.9473684210526315,
+          0.782608695652174,
+          0.8571428571428571
+        ],
+        "MICRO_SHARED": [
+          0.9375,
+          1.0,
+          0.967741935483871
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 3,
+          "API_KEY": 2,
+          "CARD": 3,
+          "EMAIL": 3,
+          "IFSC": 3,
+          "PAN": 3,
+          "PHONE": 3,
+          "UPI_ID": 3
+        }
+      },
+      "p50_ms": 6.362400000398338,
+      "p95_ms": 7.755599999654805
+    }
+  },
+  "tag_results": {
+    "real": {
+      "prompt_count": 17,
+      "systems": {
+        "kavach": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "kavach_block": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "regex_only": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              null,
+              0.0,
+              0.0
+            ],
+            "UPI_ID": [
+              0.4,
+              1.0,
+              0.5714285714285714
+            ],
+            "MICRO_ALL": [
+              0.7692307692307693,
+              0.5882352941176471,
+              0.6666666666666666
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              0.7272727272727273,
+              0.8421052631578947
+            ]
+          }
+        },
+        "presidio": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              null,
+              0.0,
+              0.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.6470588235294118,
+              0.7857142857142857
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_custom": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.7647058823529411,
+              0.8666666666666667
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_norm": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.7647058823529411,
+              0.8666666666666667
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "tricky": {
+      "prompt_count": 6,
+      "systems": {
+        "kavach": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "kavach_block": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "regex_only": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.8333333333333334,
+              0.9090909090909091
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              null,
+              0.0,
+              0.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.6666666666666666,
+              0.8
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_custom": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.8333333333333334,
+              0.9090909090909091
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_norm": {
+          "metrics": {
+            "AADHAAR": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "CARD": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.8333333333333334,
+              0.9090909090909091
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "neg": {
+      "prompt_count": 20,
+      "systems": {
+        "kavach": {
+          "false_alarm_rate": 0.0,
+          "negative_details": {
+            "negative_prompts": 20,
+            "negative_prompt_false_alarms": 0,
+            "negative_false_positive_entities": 0,
+            "gold_counts": {}
+          }
+        },
+        "kavach_block": {
+          "false_alarm_rate": 0.0,
+          "negative_details": {
+            "negative_prompts": 20,
+            "negative_prompt_false_alarms": 0,
+            "negative_false_positive_entities": 0,
+            "gold_counts": {}
+          }
+        },
+        "regex_only": {
+          "false_alarm_rate": 0.25,
+          "negative_details": {
+            "negative_prompts": 20,
+            "negative_prompt_false_alarms": 5,
+            "negative_false_positive_entities": 5,
+            "gold_counts": {
+              "AADHAAR": 0,
+              "PAN": 0
+            }
+          }
+        },
+        "presidio": {
+          "false_alarm_rate": 0.05,
+          "negative_details": {
+            "negative_prompts": 20,
+            "negative_prompt_false_alarms": 1,
+            "negative_false_positive_entities": 1,
+            "gold_counts": {
+              "AADHAAR": 0
+            }
+          }
+        },
+        "presidio_custom": {
+          "false_alarm_rate": 0.05,
+          "negative_details": {
+            "negative_prompts": 20,
+            "negative_prompt_false_alarms": 1,
+            "negative_false_positive_entities": 1,
+            "gold_counts": {
+              "AADHAAR": 0
+            }
+          }
+        },
+        "presidio_norm": {
+          "false_alarm_rate": 0.05,
+          "negative_details": {
+            "negative_prompts": 20,
+            "negative_prompt_false_alarms": 1,
+            "negative_false_positive_entities": 1,
+            "gold_counts": {
+              "AADHAAR": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "language_results": {
+    "en": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          0.6666666666666666,
+          0.8,
+          0.7272727272727273
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          0.8333333333333334,
+          1.0,
+          0.9090909090909091
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          0.8333333333333334,
+          1.0,
+          0.9090909090909091
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          0.8333333333333334,
+          1.0,
+          0.9090909090909091
+        ]
+      }
+    },
+    "hi": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "mr": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "hinglish": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "mr_en": {
+      "kavach": {
+        "MICRO_SHARED": [
+          null,
+          null,
+          null
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          null,
+          null,
+          null
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          null,
+          null,
+          null
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          null,
+          null,
+          null
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          null,
+          null,
+          null
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  }
+}
