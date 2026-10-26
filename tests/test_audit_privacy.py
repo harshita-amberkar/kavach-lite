@@ -60,10 +60,13 @@ class AuditPrivacyTests(unittest.TestCase):
 
                 self.assertGreater(run_id, 0)
 
-                with audit._connect() as connection:
+                connection = audit._connect()
+                try:
                     rows = connection.execute(
                         "SELECT * FROM workflow_runs"
                     ).fetchall()
+                finally:
+                    connection.close()
 
                 recent_runs = audit.list_recent_runs(10)
 
