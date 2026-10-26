@@ -132,13 +132,26 @@ def review_findings(text: str, findings: list[dict]) -> dict:
             timeout=AGENT_TIMEOUT,
         )
         response.raise_for_status()
-        raw = response.json().get("response", "")
+        response_data = response.json()
+        if not isinstance(response_data, dict):
+            return {"status": "unavailable", "reviews": []}
+
+        raw = response_data.get("response")
+        if not isinstance(raw, str):
+            return {"status": "unavailable", "reviews": []}
+
         parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            return {"status": "unavailable", "reviews": []}
+
+        model_reviews = parsed.get("reviews")
+        if not isinstance(model_reviews, list):
+            return {"status": "unavailable", "reviews": []}
 
         allowed_ids = {item["id"] for item in candidates}
         reviews = []
 
-        for item in parsed.get("reviews", []):
+        for item in model_reviews:
             if not isinstance(item, dict):
                 continue
             if item.get("id") not in allowed_ids:

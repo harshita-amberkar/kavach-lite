@@ -41,6 +41,7 @@ class MockUpstreamClient:
 
     def __init__(self):
         self.captured_payload = None
+        self.captured_headers = None
 
     async def __aenter__(self):
         return self
@@ -50,6 +51,7 @@ class MockUpstreamClient:
 
     def stream(self, method, url, **kwargs):
         self.captured_payload = kwargs.get("json")
+        self.captured_headers = kwargs.get("headers")
         return MockUpstreamResponse()
 
 
@@ -91,6 +93,20 @@ class ChatProxyMaskingTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(mock_client.captured_payload)
+        self.assertIsNotNone(mock_client.captured_headers)
+
+        # Only the provider authorization and content type should be sent.
+        forwarded_header_names = {
+            name.lower() for name in mock_client.captured_headers
+        }
+        self.assertEqual(
+            forwarded_header_names,
+            {"authorization", "content-type"},
+        )
+        self.assertEqual(
+            mock_client.captured_headers["Authorization"],
+            "Bearer test-only-provider-token",
+        )
 
         forwarded_text = (
             mock_client.captured_payload["messages"][0]["content"]

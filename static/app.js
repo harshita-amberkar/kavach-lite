@@ -9,7 +9,7 @@ function getKavachApiToken() {
 
   if (!token) {
     token = window.prompt(
-      "Enter the KAVACH API token displayed in the server terminal:"
+      "Enter the KAVACH_API_TOKEN value configured for the server:"
     );
 
     if (!token || !token.trim()) {

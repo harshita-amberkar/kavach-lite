@@ -66,6 +66,46 @@ class AgentTests(unittest.TestCase):
             {"status": "unavailable", "reviews": []},
         )
 
+    @patch("kavach.agent.httpx.post")
+    def test_non_object_ollama_response_fails_safely(self, mock_post):
+        mock_post.return_value.json.return_value = []
+        mock_post.return_value.raise_for_status.return_value = None
+
+        with patch.object(agent, "AGENT_ENABLED", True):
+            result = agent.review_findings(self.text, self.findings)
+
+        self.assertEqual(
+            result, {"status": "unavailable", "reviews": []}
+        )
+
+    @patch("kavach.agent.httpx.post")
+    def test_non_object_model_json_fails_safely(self, mock_post):
+        mock_post.return_value.json.return_value = {
+            "response": "[]"
+        }
+        mock_post.return_value.raise_for_status.return_value = None
+
+        with patch.object(agent, "AGENT_ENABLED", True):
+            result = agent.review_findings(self.text, self.findings)
+
+        self.assertEqual(
+            result, {"status": "unavailable", "reviews": []}
+        )
+
+    @patch("kavach.agent.httpx.post")
+    def test_non_list_reviews_fails_safely(self, mock_post):
+        mock_post.return_value.json.return_value = {
+            "response": json.dumps({"reviews": {}})
+        }
+        mock_post.return_value.raise_for_status.return_value = None
+
+        with patch.object(agent, "AGENT_ENABLED", True):
+            result = agent.review_findings(self.text, self.findings)
+
+        self.assertEqual(
+            result, {"status": "unavailable", "reviews": []}
+        )
+
     def test_disabled_agent_does_not_call_model(self):
         with patch.object(agent, "AGENT_ENABLED", False):
             with patch("kavach.agent.httpx.post") as mock_post:

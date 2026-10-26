@@ -281,8 +281,8 @@ async def report_upstream_configuration():
     """Log API-token availability and upstream configuration status."""
     if not _configured_api_token:
         logger.warning(
-            "KAVACH API token (enter in dashboard): %s",
-            API_TOKEN,
+            "KAVACH_API_TOKEN is not configured. Set it in the server "
+            "environment before using protected dashboard/API routes."
         )
 
     host = configured_upstream_hostname()
