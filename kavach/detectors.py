@@ -78,6 +78,13 @@ _CTX = re.compile(
     re.IGNORECASE,
 )
 
+_PLACEHOLDER_SECRET = re.compile(
+    r"(?i)(?:"
+    r"\b(?:redacted|placeholder|dummy|changeme|replace[_-]?me)\b"
+    r"|\b(?:your|insert)[_-]?(?:api[_-]?)?key\b"
+    r")"
+)
+
 _UPI_HANDLES = (
     "ybl|ibl|axl|okhdfcbank|okicici|okaxis|oksbi|paytm|apl|upi|sbi|"
     "hdfcbank|icici|axisbank|pnb|barodampay|kotak|indus|fbl|airtel|jio|postbank"
@@ -103,13 +110,13 @@ _PHONE_NEGATIVE_CTX = re.compile(
 _AADHAAR_NEGATIVE_CTX = re.compile(
     r"(?:"
     r"\b(?:order|po|purchase\s+order|ticket|reference|ref|tracking|"
-    r"consignment|invoice|transaction|txn|awb|case)\b"
+    r"consignment|invoice|transaction|txn|awb|case|batch|timestamp|"
+    r"time\s+stamp|build|run|job|sequence|serial)\b"
     r"|ऑर्डर|ट्रैकिंग|टिकट"
     r")"
     r"\s*(?:(?:id|number|num|no\.?|क्रमांक|नंबर)\s*)?[:#\-]?\s*$",
     re.IGNORECASE,
 )
-
 # Each rule:
 # name, regex, priority (lower wins overlaps), check, confidence
 
@@ -302,6 +309,9 @@ def scan(text: str) -> list:
             end = match.end()
 
             if check and not check(raw_value, t, start):
+                continue
+
+            if name == "API_KEY" and _PLACEHOLDER_SECRET.search(raw_value):
                 continue
 
             if name == "PHONE":
