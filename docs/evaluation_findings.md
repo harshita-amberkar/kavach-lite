@@ -129,3 +129,30 @@ negative prompts flagged among its 20 negative examples.
 
 Further evaluation should use additional examples that were not used
 to select or tune the detector rules.
+
+## 9. Locked synthetic evaluation set (v1)
+
+The hand-written synthetic dataset at `eval/gold/gold_locked_v1.txt`
+contains 51 prompts: 12 tagged `real`, 12 tagged `tricky`, and 27
+tagged `neg`. It covers EMAIL, PHONE, PAN, IFSC, UPI_ID, and API_KEY.
+
+Results from the recorded run:
+
+| Metric | KAVACH | KAVACH block mode |
+|---|---:|---:|
+| Micro-F1 | 1.00 | 1.00 |
+| Negative prompts flagged | 0/27 | 0/27 |
+| Negative false-alarm rate | 0.0% | 0.0% |
+| Latency p50 | 0.023 ms | 0.023 ms |
+| Latency p95 | 0.035 ms | 0.032 ms |
+
+All six represented entity types reported precision, recall, and F1 of
+1.00 for both KAVACH modes on this run. Regex-only flagged 3/27 negative
+prompts; Presidio, Presidio custom, and Presidio normalized each flagged
+1/27.
+
+These are measurements on a small, handcrafted synthetic dataset.
+They do not establish production-wide accuracy or guarantee performance
+on unseen real-world inputs. Freeze this version for future comparisons
+rather than changing detector rules to optimize its score. Use a new,
+separately designed dataset for subsequent detector tuning.
