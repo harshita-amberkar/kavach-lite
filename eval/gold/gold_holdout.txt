@@ -1,0 +1,58 @@
+# KAVACH Lite holdout evaluation dataset
+# Fabricated test fixtures only. Do not use as real identifiers.
+
+en:real | Send the sandbox notice to [[EMAIL:holdout.user271@example.net]].
+hi:real | कृपया परीक्षण रिपोर्ट [[EMAIL:parikshan482@example.org]] पर भेजें।
+hinglish:real | Demo ka status [[EMAIL:team.qa619@example.com]] par share karo.
+
+en:tricky | The mock taxpayer record lists PAN [[PAN:LMNPQ5826R]] for validation only.
+hi:real | परीक्षण फॉर्म में PAN [[PAN:VTRPJ1468K]] दर्ज करें।
+mr:real | बनावट चाचणी नोंदीतील PAN [[PAN:KLPPA7024D]] आहे.
+
+en:real | Pay the sandbox request using [[UPI_ID:holdout271@okaxis]].
+hi:real | डेमो पेमेंट आईडी [[UPI_ID:demo.team482@ybl]] है।
+hinglish:tricky | Mock payment handle [[UPI_ID:sandbox619@okicici]] ko check karo.
+
+en:real | The fictional branch record uses IFSC [[IFSC:HOLD0123456]].
+mr:real | चाचणी शाखेचा IFSC [[IFSC:TEST0000789]] आहे.
+hi:real | नकली शाखा कोड [[IFSC:KAVC0000412]] है।
+
+en:real | Mask the test card [[CARD:5555555555554444]] before processing.
+hi:tricky | सैंडबॉक्स कार्ड नंबर [[CARD:4000000000000002]] परीक्षण के लिए है।
+hinglish:real | Checkout test ka card [[CARD:6011000990139424]] hai.
+
+en:real | Contact the mock test line [[PHONE:+91 90000 10027]] for the demo.
+hi:real | परीक्षण संपर्क नंबर [[PHONE:+91 90000 10482]] है।
+mr:real | चाचणीसाठीचा संपर्क क्रमांक [[PHONE:+91 90000 10619]] आहे.
+
+en:tricky | The fake authorization fixture is [[API_KEY:sk-proj-kavachholdoutA81f29d47c12b36e75f90a14c8276d11]].
+hi:real | नकली API token [[API_KEY:sk-test-9a71c43b8e2d71f04a82c6d3]] परीक्षण हेतु दिया गया है।
+
+en:tricky | The generated test identity value is [[AADHAAR:234567890124]] and is not a real person's identifier.
+hi:real | डेमो रिकॉर्ड का काल्पनिक पहचान परीक्षण मान [[AADHAAR:345678901238]] है।
+mr:tricky | चाचणीसाठी तयार केलेला बनावट क्रमांक [[AADHAAR:876543210988]] आहे.
+
+en:neg | Shipment batch 202610261532 is a timestamp, not an identity number.
+hi:neg | परीक्षण मशीन का रन क्रमांक 987654321098 है, कोई पहचान संख्या नहीं।
+mr:neg | चाचणीसाठीचा reference code 1234-5678-9012 हा बॅच क्रमांक आहे.
+hinglish:neg | Build ID 200012340056 ko identity number mat samjho; it is a local run ID.
+
+en:neg | Asset code LMNQX5826R is an inventory label, not a PAN.
+hi:neg | Branch label HOLD-0123456 बैंक का वास्तविक routing code नहीं है।
+mr:neg | 27-LMNPQ-5826-R1Z हा अपूर्ण vendor reference आहे, GSTIN नाही.
+
+en:neg | The documentation uses the placeholder [API_KEY_REDACTED], not a credential.
+en:neg | The sample contact is written as user [at] example [dot] net.
+hi:neg | ईमेल पता जानबूझकर छिपाया गया है: [उपयोगकर्ता हटाया गया]।
+hinglish:neg | UPI handle ko docs mein demo [at] okaxis likha hai, actual handle nahi.
+
+en:neg | The payment memo contains amount 1234.56 and batch 78102; neither is an account identifier.
+mr:neg | डेमो CSV मधील १२३४५ ही item count आहे, फोन नंबर नाही.
+en:neg | Product SKU QWERT-1234-ABCD and shelf B-12 are inventory values.
+hi:neg | रिपोर्ट का संस्करण 2026-10-26 और समय 15:32 है।
+mr_en:neg | Test build 7.4.2 failed at step 08; no customer identifier is included.
+
+en:neg | The log contains status code 404 and retry count 3.
+en:neg | Branch reference H0LD0123456 uses the digit zero in the wrong position for an IFSC.
+en:neg | The source-code example contains sk-REDACTED-PLACEHOLDER, not a usable API key.
+en:neg | Generated at 2026-10-26T15:32:00Z; the job lasted 245 seconds.

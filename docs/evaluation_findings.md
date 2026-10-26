@@ -20,8 +20,8 @@ the local environment used for the benchmark.
 | Micro F1 | 1.00 |
 | Negative prompts flagged | 0/20 |
 | Negative-prompt false-alarm rate | 0.0% |
-| Median latency (p50) | 0.041 ms |
-| 95th-percentile latency (p95) | 0.078 ms |
+| Median latency (p50) | 0.038 ms |
+| 95th-percentile latency (p95) | 0.070 ms |
 
 The benchmark reported precision, recall, and F1 of 1.00 for
 the listed Aadhaar, card, email, GSTIN, PAN, phone, and UPI
@@ -31,12 +31,12 @@ categories.
 
 | System | Micro F1 | Negative false-alarm rate | p50 latency |
 |---|---:|---:|---:|
-| KAVACH | 1.00 | 0.0% | 0.041 ms |
-| KAVACH block mode | 1.00 | 0.0% | 0.039 ms |
-| Regex only | 0.75 | 40.0% | 0.023 ms |
-| Presidio | 0.73 | 35.0% | 7.448 ms |
-| Presidio custom | 0.89 | 35.0% | 6.482 ms |
-| Presidio normalized | 0.90 | 35.0% | 6.486 ms |
+| KAVACH | 1.00 | 0.0% | 0.038 ms |
+| KAVACH block mode | 1.00 | 0.0% | 0.037 ms |
+| Regex only | 0.75 | 40.0% | 0.021 ms |
+| Presidio | 0.73 | 35.0% | 6.613 ms |
+| Presidio custom | 0.89 | 35.0% | 6.332 ms |
+| Presidio normalized | 0.90 | 35.0% | 6.042 ms |
 
 These measurements describe this benchmark only. They do not
 establish production-wide superiority over the comparison systems.
@@ -95,3 +95,37 @@ false-alarm rates in this run.
 The next evaluation step is to expand the dataset, improve the
 error report's expected-versus-predicted metadata, and repeat the
 benchmark without tuning rules solely to the existing prompts.
+
+## 8. Holdout regression evaluation
+
+A separate hand-written regression dataset contained 43 prompts:
+17 real-tagged examples, 6 tricky examples, and 20 negative examples.
+
+Before targeted fixes, KAVACH flagged two negative prompts:
+one numeric batch/timestamp example as Aadhaar and one explicit
+redacted credential placeholder as an API key.
+
+After adding generic context handling for batch-like numbers and
+filtering obvious credential placeholders, the regression run reported:
+
+| Metric | Result |
+|---|---:|
+| Micro precision | 1.00 |
+| Micro recall | 1.00 |
+| Micro F1 | 1.00 |
+| Negative prompts flagged | 0/20 |
+| Negative false-alarm rate | 0.0% |
+| Median latency (p50) | 0.031 ms |
+| 95th-percentile latency (p95) | 0.052 ms |
+
+This dataset was used to identify and guide the fixes. It must therefore
+be treated as a regression set, not as an independent unseen test set.
+The post-fix scores measure the current behavior on these examples but
+do not prove perfect real-world accuracy.
+
+The original 51-prompt benchmark was rerun after the fixes. Its reported
+micro-precision, micro-recall, and micro-F1 remained 1.00, with no
+negative prompts flagged among its 20 negative examples.
+
+Further evaluation should use additional examples that were not used
+to select or tune the detector rules.
