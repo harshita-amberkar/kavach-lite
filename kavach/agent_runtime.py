@@ -132,6 +132,50 @@ class PrivacyToolRuntime:
             or initial_detection.get("status") != "ok"
         )
 
+    def available_tools(self):
+        """Expose only tools appropriate for the current workflow state."""
+        if self._scan is None:
+            # Always begin by scanning; do not allow premature escalation.
+            allowed = {"scan_prompt"}
+
+        elif self._verification is None:
+            initial = self._scan.get("global_detection", {})
+            if (
+                isinstance(initial, dict)
+                and initial.get("status") == "ok"
+            ):
+                allowed = {"verify_masked_output"}
+            else:
+                allowed = {
+                    "verify_masked_output",
+                    "request_human_review",
+                }
+
+        elif self.verification_passed:
+            initial = self._scan.get("global_detection", {})
+            if (
+                isinstance(initial, dict)
+                and initial.get("status") == "ok"
+                and not self._review_reasons
+            ):
+                allowed = {"complete"}
+            else:
+                allowed = {"request_human_review"}
+
+        elif self._verification.get("findings"):
+            if self._remask_rounds < MAX_REMASK_ROUNDS:
+                allowed = {"remask_remaining_findings"}
+            else:
+                allowed = {"request_human_review"}
+
+        else:
+            allowed = {"request_human_review"}
+
+        return [
+            item for item in _TOOL_DESCRIPTIONS
+            if item["name"] in allowed
+        ]
+
     def summary(self):
         """Safe planner context: no original or masked prompt text."""
         findings = (
@@ -438,13 +482,15 @@ class PrivacyToolRuntime:
 def _ask_model(runtime):
     """Ask Ollama for one JSON tool action using metadata only."""
     prompt = (
-        "You control a bounded privacy workflow. Choose exactly one next action "
-        "from the supplied allowlist. Return JSON only with keys tool and arguments. "
-        "Do not invent tools or arguments. Do not ask for the original prompt; "
-        "it is intentionally not provided. The Python runtime executes tools. "
-        "Never claim verification passed unless the state says it passed. "
-        "Allowed actions:\n"
-        + json.dumps(_TOOL_DESCRIPTIONS, ensure_ascii=True)
+        "You control a bounded privacy workflow. Choose exactly one action "
+        "from the CURRENTLY ELIGIBLE tools listed below. The list changes "
+        "after each tool call. Never choose a tool not on the current list. "
+        "Return JSON only with keys tool and arguments. Do not invent tools "
+        "or arguments. Do not ask for the original prompt; it is intentionally "
+        "not provided. Python executes the tools. Never claim verification "
+        "passed unless the state says it passed. "
+        "Currently eligible tools:\n"
+        + json.dumps(runtime.available_tools(), ensure_ascii=True)
         + "\nCurrent safe state:\n"
         + json.dumps(runtime.summary(), ensure_ascii=True)
         + '\nReturn e.g. {"tool":"verify_masked_output","arguments":{}}'
@@ -545,12 +591,27 @@ def run_autonomous_privacy_agent(text, mode="label", enabled=None, planner=None)
                 name = action["tool"]
                 arguments = action["arguments"]
 
+                eligible_names = {
+                    item["name"] for item in runtime.available_tools()
+                }
+                if name not in eligible_names:
+                    # Give the model another bounded chance with updated state.
+                    # Never execute an out-of-sequence action.
+                    runtime.last_observation = {
+                        "state": "invalid_action",
+                        "reason": "tool_not_currently_available",
+                    }
+                    continue
+
                 if name == "complete":
                     if arguments or not runtime.verification_passed:
                         raise ToolExecutionError("premature_completion")
                     break
 
                 runtime.execute(name, arguments)
+                if name == "request_human_review":
+                    # Escalation is terminal; avoid repeated review calls.
+                    break
 
             except Exception as exc:
                 allowed_failures = {
