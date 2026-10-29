@@ -1,0 +1,1161 @@
+{
+  "dataset_mode": "gold",
+  "gold_file": "eval/gold/gold_locked_v1.txt",
+  "dataset_file": null,
+  "prompt_count": 51,
+  "split": "all",
+  "systems": {
+    "kavach": {
+      "metrics": {
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "neg_false_alarm_rate": 0.0,
+      "negative_details": {
+        "negative_prompts": 27,
+        "negative_prompt_false_alarms": 0,
+        "negative_false_positive_entities": 0,
+        "gold_counts": {
+          "API_KEY": 4,
+          "EMAIL": 4,
+          "IFSC": 4,
+          "PAN": 4,
+          "PHONE": 4,
+          "UPI_ID": 4
+        }
+      },
+      "p50_ms": 0.03169999990859651,
+      "p95_ms": 0.05790000000160944
+    },
+    "kavach_block": {
+      "metrics": {
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "neg_false_alarm_rate": 0.0,
+      "negative_details": {
+        "negative_prompts": 27,
+        "negative_prompt_false_alarms": 0,
+        "negative_false_positive_entities": 0,
+        "gold_counts": {
+          "API_KEY": 4,
+          "EMAIL": 4,
+          "IFSC": 4,
+          "PAN": 4,
+          "PHONE": 4,
+          "UPI_ID": 4
+        }
+      },
+      "p50_ms": 0.028600000177902984,
+      "p95_ms": 0.03999999989900971
+    },
+    "regex_only": {
+      "metrics": {
+        "AADHAAR": [
+          0.0,
+          null,
+          null
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          0.8,
+          1.0,
+          0.8888888888888888
+        ],
+        "UPI_ID": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "MICRO_ALL": [
+          0.6956521739130435,
+          0.6666666666666666,
+          0.6808510638297872
+        ],
+        "MICRO_SHARED": [
+          0.8,
+          1.0,
+          0.8888888888888888
+        ]
+      },
+      "neg_false_alarm_rate": 0.1111111111111111,
+      "negative_details": {
+        "negative_prompts": 27,
+        "negative_prompt_false_alarms": 3,
+        "negative_false_positive_entities": 3,
+        "gold_counts": {
+          "AADHAAR": 0,
+          "API_KEY": 4,
+          "EMAIL": 4,
+          "IFSC": 4,
+          "PAN": 4,
+          "PHONE": 4,
+          "UPI_ID": 4
+        }
+      },
+      "p50_ms": 0.01889999998638814,
+      "p95_ms": 0.03429999992476951
+    },
+    "presidio": {
+      "metrics": {
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          0.8,
+          1.0,
+          0.8888888888888888
+        ],
+        "UPI_ID": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.9230769230769231,
+          0.5,
+          0.6486486486486487
+        ],
+        "MICRO_SHARED": [
+          0.9230769230769231,
+          1.0,
+          0.96
+        ]
+      },
+      "neg_false_alarm_rate": 0.037037037037037035,
+      "negative_details": {
+        "negative_prompts": 27,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "API_KEY": 4,
+          "EMAIL": 4,
+          "IFSC": 4,
+          "PAN": 4,
+          "PHONE": 4,
+          "UPI_ID": 4
+        }
+      },
+      "p50_ms": 6.699199999957273,
+      "p95_ms": 12.932699999964825
+    },
+    "presidio_custom": {
+      "metrics": {
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          0.8,
+          1.0,
+          0.8888888888888888
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          0.9411764705882353,
+          0.6666666666666666,
+          0.7804878048780488
+        ],
+        "MICRO_SHARED": [
+          0.9230769230769231,
+          1.0,
+          0.96
+        ]
+      },
+      "neg_false_alarm_rate": 0.037037037037037035,
+      "negative_details": {
+        "negative_prompts": 27,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "API_KEY": 4,
+          "EMAIL": 4,
+          "IFSC": 4,
+          "PAN": 4,
+          "PHONE": 4,
+          "UPI_ID": 4
+        }
+      },
+      "p50_ms": 6.5690000001268345,
+      "p95_ms": 11.112200000070516
+    },
+    "presidio_norm": {
+      "metrics": {
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          0.8,
+          1.0,
+          0.8888888888888888
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MICRO_ALL": [
+          0.9411764705882353,
+          0.6666666666666666,
+          0.7804878048780488
+        ],
+        "MICRO_SHARED": [
+          0.9230769230769231,
+          1.0,
+          0.96
+        ]
+      },
+      "neg_false_alarm_rate": 0.037037037037037035,
+      "negative_details": {
+        "negative_prompts": 27,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "API_KEY": 4,
+          "EMAIL": 4,
+          "IFSC": 4,
+          "PAN": 4,
+          "PHONE": 4,
+          "UPI_ID": 4
+        }
+      },
+      "p50_ms": 6.307300000116811,
+      "p95_ms": 7.443199999897843
+    }
+  },
+  "tag_results": {
+    "real": {
+      "prompt_count": 12,
+      "systems": {
+        "kavach": {
+          "metrics": {
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "kavach_block": {
+          "metrics": {
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "regex_only": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              0.5,
+              1.0,
+              0.6666666666666666
+            ],
+            "MICRO_ALL": [
+              0.8,
+              0.6666666666666666,
+              0.7272727272727273
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              null,
+              0.0,
+              0.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.5,
+              0.6666666666666666
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_custom": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.6666666666666666,
+              0.8
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_norm": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.6666666666666666,
+              0.8
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "tricky": {
+      "prompt_count": 12,
+      "systems": {
+        "kavach": {
+          "metrics": {
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "kavach_block": {
+          "metrics": {
+            "API_KEY": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "regex_only": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              0.5,
+              1.0,
+              0.6666666666666666
+            ],
+            "MICRO_ALL": [
+              0.8,
+              0.6666666666666666,
+              0.7272727272727273
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              null,
+              0.0,
+              0.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.5,
+              0.6666666666666666
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_custom": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.6666666666666666,
+              0.8
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "presidio_norm": {
+          "metrics": {
+            "API_KEY": [
+              null,
+              0.0,
+              0.0
+            ],
+            "EMAIL": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "IFSC": [
+              null,
+              0.0,
+              0.0
+            ],
+            "PAN": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "PHONE": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "UPI_ID": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "MICRO_ALL": [
+              1.0,
+              0.6666666666666666,
+              0.8
+            ],
+            "MICRO_SHARED": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "neg": {
+      "prompt_count": 27,
+      "systems": {
+        "kavach": {
+          "false_alarm_rate": 0.0,
+          "negative_details": {
+            "negative_prompts": 27,
+            "negative_prompt_false_alarms": 0,
+            "negative_false_positive_entities": 0,
+            "gold_counts": {}
+          }
+        },
+        "kavach_block": {
+          "false_alarm_rate": 0.0,
+          "negative_details": {
+            "negative_prompts": 27,
+            "negative_prompt_false_alarms": 0,
+            "negative_false_positive_entities": 0,
+            "gold_counts": {}
+          }
+        },
+        "regex_only": {
+          "false_alarm_rate": 0.1111111111111111,
+          "negative_details": {
+            "negative_prompts": 27,
+            "negative_prompt_false_alarms": 3,
+            "negative_false_positive_entities": 3,
+            "gold_counts": {
+              "AADHAAR": 0,
+              "PHONE": 0
+            }
+          }
+        },
+        "presidio": {
+          "false_alarm_rate": 0.037037037037037035,
+          "negative_details": {
+            "negative_prompts": 27,
+            "negative_prompt_false_alarms": 1,
+            "negative_false_positive_entities": 1,
+            "gold_counts": {
+              "PHONE": 0
+            }
+          }
+        },
+        "presidio_custom": {
+          "false_alarm_rate": 0.037037037037037035,
+          "negative_details": {
+            "negative_prompts": 27,
+            "negative_prompt_false_alarms": 1,
+            "negative_false_positive_entities": 1,
+            "gold_counts": {
+              "PHONE": 0
+            }
+          }
+        },
+        "presidio_norm": {
+          "false_alarm_rate": 0.037037037037037035,
+          "negative_details": {
+            "negative_prompts": 27,
+            "negative_prompt_false_alarms": 1,
+            "negative_false_positive_entities": 1,
+            "gold_counts": {
+              "PHONE": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "language_results": {
+    "en": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          0.75,
+          1.0,
+          0.8571428571428571
+        ]
+      }
+    },
+    "hi": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "mr": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "hinglish": {
+      "kavach": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "kavach_block": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "regex_only": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_custom": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "presidio_norm": {
+        "MICRO_SHARED": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  }
+}
