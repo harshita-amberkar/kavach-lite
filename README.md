@@ -13,7 +13,7 @@ KAVACH is a development project, not a guarantee that every sensitive value or d
 - **Chrome extension:** prompt scanning and configurable allow, warn, mask, and block actions for ChatGPT, Claude, and Gemini. Website UI changes can affect compatibility.
 - **FastAPI backend:** text scanning, file scanning, and a configured OpenAI-compatible chat-completions proxy route.
 - **Evaluation lab:** hand-written gold-set evaluation, synthetic benchmarks, comparison systems, and Python/JavaScript detector-parity tests.
-- **Optional local-LLM reviewer:** Ollama with `llama3.2:3b` can return advisory assessments for detector findings. It is disabled by default and does not change detector findings, masking, risk scores, or policy decisions.
+- **Bounded autonomous local agent:** When enabled, Ollama (`llama3.2:3b` by default) selects from an allowlist of workflow tools. Python executes those tools; deterministic detection, masking, and verification remain authoritative. The agent is disabled by default, uses safe workflow metadata for planning, and cannot run arbitrary shell commands or access arbitrary files.
 
 **Novelty note:** Microsoft Presidio already has `IN_AADHAAR` and `IN_PAN` recognizers, and commercial data-protection products exist. KAVACH does not claim that Indian-ID detection alone is novel. Its project focus is the evaluated combination of India-aware detection, prompt-time browser protection, policy actions, and a local advisory workflow.
 
@@ -28,13 +28,13 @@ User prompt
                                   |
                                   +--> findings, masked text, risk
                                   |
-                                  +--> optional local Ollama review
-                                       (sanitized context; advisory only)
+                                  +--> bounded local Ollama tool planner
+                                       (safe metadata; allowlisted tools)
 
 Gold dataset / benchmark --> evaluation reports in results/
 ```
 
-The extension and backend are separate execution paths. They share detector behavior through a JavaScript/Python parity suite, but each path still needs its own integration testing. The optional agent is separate from the deterministic decision path.
+The extension and backend are separate execution paths. They share detector behavior through a JavaScript/Python parity suite, but each path still needs independent integration testing. The autonomous agent uses a bounded tool loop; deterministic scanning, masking, and verification remain authoritative.
 
 ## Requirements
 
@@ -42,7 +42,7 @@ The extension and backend are separate execution paths. They share detector beha
 - Python and packages in `requirements.txt`
 - Node.js for extension tests
 - Google Chrome to manually test the extension
-- **Optional:** Ollama and `llama3.2:3b` for local-LLM review
+- **Optional for the local agent:** Ollama and `llama3.2:3b`.
 
 ## Run locally: Windows PowerShell
 
@@ -69,7 +69,7 @@ Useful URLs:
 
 The health endpoint in this version is `/api/health` (not `/health`).
 
-### Optional local agent setup
+### Optional autonomous local-agent setup
 
 Install Ollama using its official installation instructions, then obtain the model:
 
@@ -95,7 +95,7 @@ Configuration:
 
 These environment variables apply to the process launched from that terminal. Restart the API after changing them. Keep Ollama local for privacy-sensitive use; changing `KAVACH_OLLAMA_URL` to a remote service changes the data-flow and privacy assumptions.
 
-The agent sends finding metadata and a short, best-effort sanitized context to the configured Ollama endpoint. Redaction patterns cannot guarantee removal of every possible secret. Agent assessments are advisory and must not be treated as authoritative detection or policy decisions.
+During autonomous planning, Ollama receives a compact workflow summary and eligible-tool list, not the original or masked prompt. The separate advisory review path may send best-effort sanitized context. Sanitization patterns can miss unfamiliar secret formats, so keep the endpoint local and use synthetic data for testing. Model outputs cannot override deterministic detection, masking, verification, or policy decisions.
 
 ### Linux or macOS
 
@@ -140,6 +140,12 @@ Contact [EMAIL] for support.
 
 The agent review is an advisory output. It does not modify the original findings, masked text, risk score, or policy actions.
 
+### Autonomous agent endpoint
+
+`POST /api/agentic/scan` runs the bounded agent workflow. The model may select only tools currently eligible for the workflow state; Python executes the approved actions. Scanning and masking are deterministic, and the masked output is verified before normal completion. Invalid actions or planner failures can trigger safe fallback and human review.
+
+`GET /api/agentic/history` returns audit metadata. Raw prompts and sensitive values should not be stored in audit records.
+
 ### Other routes
 
 - `POST /api/scan-file`
@@ -160,6 +166,7 @@ Run these from the project root.
 ### Extension policy/privacy and detector parity
 
 ```powershell
+node --check .\extension\content.js
 node .\extension\tests\policy_and_privacy.js
 node .\extension\tests\parity.js
 ```
@@ -167,7 +174,7 @@ node .\extension\tests\parity.js
 ### Python syntax check
 
 ```powershell
-.\.venv\Scripts\python.exe -m py_compile app.py kavach\agent.py kavach\detectors.py
+.\.venv\Scripts\python.exe -m py_compile app.py kavach\agent.py kavach\detectors.py kavach\agent_runtime.py tests\test_agent_runtime.py
 ```
 
 ### Evaluation
@@ -183,12 +190,12 @@ The evaluation runner writes `results/report.md`, `results/report.json`, and `re
 
 The most recent reported release-check run completed successfully:
 
-- Python unit tests: **22 passed**.
+- Python unit tests: **53 passed** in the most recent full verified run.
 - Extension policy/privacy checks: **passed**.
 - JavaScript/Python detector parity: **1,557 of 1,557 cases matched**.
 - Python syntax checks for `app.py`, `kavach/agent.py`, and `kavach/detectors.py`: **passed**.
-- Live API smoke check after the sanitizer update: email was detected and masked; local agent review returned `status: ok`.
-- Three-case live smoke test: Email, PAN, and UPI returned their expected types with successful agent reviews after the PAN test value was corrected.
+- Live autonomous-runtime smoke test with Ollama (`llama3.2:3b`): synthetic email masked, verification passed, no fallback, and no human review required.
+- Live `POST /api/agentic/scan` integration smoke test: HTTP 200, expected masked output, completed status, no fallback, verification passed, and no human review required.
 
 These are reported development checks. The live agent results are smoke tests, not an accuracy study of model judgments.
 
