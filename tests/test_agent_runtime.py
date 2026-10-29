@@ -1,4 +1,5 @@
 ﻿import json
+import httpx
 import unittest
 from unittest.mock import patch
 
@@ -251,6 +252,67 @@ class AutonomousAgentRuntimeTests(unittest.TestCase):
         self.assertEqual(result["agent_review"]["status"], "unavailable")
         self.assertEqual(result["verification"]["status"], "passed")
         self.assertEqual(result["masked_text"], "Contact [EMAIL] for support.")
+        self.assertTrue(result["requires_human_review"])
+
+
+    def test_ollama_timeout_falls_back_and_verifies_masking(self):
+        with patch(
+            "kavach.agent_runtime.httpx.post",
+            side_effect=httpx.TimeoutException("synthetic timeout"),
+        ), patch(
+            "kavach.agent_runtime.analyze_global",
+            side_effect=[
+                scan_result(
+                    [self.finding],
+                    "Contact [EMAIL] for support.",
+                ),
+                scan_result([], "Contact [EMAIL] for support."),
+            ],
+        ):
+            result = run_autonomous_privacy_agent(
+                self.prompt, enabled=True
+            )
+
+        self.assertEqual(result["status"], "needs_review")
+        self.assertEqual(
+            result["masked_text"], "Contact [EMAIL] for support."
+        )
+        self.assertTrue(result["agent_execution"]["fallback_used"])
+        self.assertIn(
+            "agent_planner_error",
+            result["agent_execution"]["review_reason_codes"],
+        )
+        self.assertEqual(result["verification"]["status"], "passed")
+        self.assertTrue(result["requires_human_review"])
+
+    def test_malformed_ollama_json_falls_back_safely(self):
+        with patch(
+            "kavach.agent_runtime.httpx.post"
+        ) as mock_post, patch(
+            "kavach.agent_runtime.analyze_global",
+            side_effect=[
+                scan_result(
+                    [self.finding],
+                    "Contact [EMAIL] for support.",
+                ),
+                scan_result([], "Contact [EMAIL] for support."),
+            ],
+        ):
+            mock_post.return_value.raise_for_status.return_value = None
+            mock_post.return_value.json.return_value = {
+                "response": "not valid JSON"
+            }
+
+            result = run_autonomous_privacy_agent(
+                self.prompt, enabled=True
+            )
+
+        self.assertEqual(result["status"], "needs_review")
+        self.assertEqual(
+            result["masked_text"], "Contact [EMAIL] for support."
+        )
+        self.assertTrue(result["agent_execution"]["fallback_used"])
+        self.assertEqual(result["verification"]["status"], "passed")
         self.assertTrue(result["requires_human_review"])
 
 
