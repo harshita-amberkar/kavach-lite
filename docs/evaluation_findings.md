@@ -156,3 +156,44 @@ They do not establish production-wide accuracy or guarantee performance
 on unseen real-world inputs. Freeze this version for future comparisons
 rather than changing detector rules to optimize its score. Use a new,
 separately designed dataset for subsequent detector tuning.
+
+
+## 10. Latest evaluation rerun (29 October 2026)
+
+The gold set and the separate regression dataset were rerun after the
+autonomous-agent failure-handling tests were added. No detector rules
+were changed for these runs.
+
+### Gold set: 51 prompts
+
+| System | Micro precision | Micro recall | Micro F1 | Negative prompts flagged | p50 latency | p95 latency |
+|---|---:|---:|---:|---:|---:|---:|
+| KAVACH | 1.00 | 1.00 | 1.00 | 0/20 (0%) | 0.055 ms | 0.146 ms |
+| KAVACH block mode | 1.00 | 1.00 | 1.00 | 0/20 (0%) | 0.052 ms | 0.097 ms |
+| Regex only | 0.66 | 0.88 | 0.75 | 8/20 (40%) | 0.030 ms | 0.055 ms |
+| Presidio | 0.76 | 0.70 | 0.73 | 7/20 (35%) | 9.323 ms | 27.640 ms |
+| Presidio custom | 0.81 | 0.97 | 0.89 | 7/20 (35%) | 7.986 ms | 11.041 ms |
+| Presidio normalized | 0.82 | 1.00 | 0.90 | 7/20 (35%) | 7.976 ms | 10.086 ms |
+
+### Regression set: 43 prompts
+
+| System | Micro F1 | Negative prompts flagged | p50 latency | p95 latency |
+|---|---:|---:|---:|---:|
+| KAVACH | 1.00 | 0/20 (0%) | 0.039 ms | 0.067 ms |
+| KAVACH block mode | 1.00 | 0/20 (0%) | 0.037 ms | 0.062 ms |
+| Regex only | 0.65 | 5/20 (25%) | 0.029 ms | 0.043 ms |
+| Presidio | 0.77 | 1/20 (5%) | 7.368 ms | 12.066 ms |
+| Presidio custom | 0.86 | 1/20 (5%) | 7.381 ms | 9.323 ms |
+| Presidio normalized | 0.86 | 1/20 (5%) | 7.721 ms | 11.032 ms |
+
+The separate synthetic benchmark run reported zero false alarms on
+210 clean sentences. This count is distinct from the 20 negative
+prompts in each hand-written dataset.
+
+A normalized prompt audit found no duplicates within either dataset
+and no exact normalized overlap between the gold set and regression
+set. The regression set was previously used to identify and guide
+detector fixes, so these results are regression evidence rather than
+an untouched blind evaluation. The perfect displayed scores remain
+limited to the tested examples and do not establish real-world
+detection accuracy or generalization.

@@ -190,7 +190,7 @@ The evaluation runner writes `results/report.md`, `results/report.json`, and `re
 
 The most recent reported release-check run completed successfully:
 
-- Python unit tests: **53 passed** in the most recent full verified run.
+- Python unit tests: **55 passed** in the most recent full verified run.
 - Extension policy/privacy checks: **passed**.
 - JavaScript/Python detector parity: **1,557 of 1,557 cases matched**.
 - Python syntax checks for `app.py`, `kavach/agent.py`, and `kavach/detectors.py`: **passed**.
@@ -201,20 +201,48 @@ These are reported development checks. The live agent results are smoke tests, n
 
 ## Gold-set benchmark results
 
-Latest reported run: **51 hand-written prompts** in `eval/gold/gold.txt` (27 tagged `real`, 4 tagged `tricky`, and 20 tagged `neg`). The Hindi test entry was repaired to use readable Unicode and a checksum-valid synthetic Aadhaar test value. The detector code was not changed for that dataset repair.
+Latest rerun (29 October 2026): **51 hand-written prompts** in `eval/gold/gold.txt` (27 tagged `real`, 4 tagged `tricky`, and 20 tagged `neg`). The Hindi test entry was repaired to use readable Unicode and a checksum-valid synthetic Aadhaar test value. The detector code was not changed for that dataset repair.
 
 | System | Micro precision | Micro recall | Micro F1 | Negative prompts flagged | p50 latency | p95 latency |
 |---|---:|---:|---:|---:|---:|---:|
-| KAVACH | 1.00 | 1.00 | 1.00 | 0/20 (0%) | 0.039 ms | 0.074 ms |
-| KAVACH block | 1.00 | 1.00 | 1.00 | 0/20 (0%) | 0.036 ms | 0.069 ms |
-| Regex-only | 0.66 | 0.88 | 0.75 | 8/20 (40%) | 0.021 ms | 0.037 ms |
-| Presidio | 0.76 | 0.70 | 0.73 | 7/20 (35%) | 7.005 ms | 17.028 ms |
-| Presidio custom | 0.81 | 0.97 | 0.89 | 7/20 (35%) | 6.802 ms | 8.421 ms |
-| Presidio normalized | 0.82 | 1.00 | 0.90 | 7/20 (35%) | 6.890 ms | 8.550 ms |
+| KAVACH | 1.00 | 1.00 | 1.00 | 0/20 (0%) | 0.055 ms | 0.146 ms |
+| KAVACH block | 1.00 | 1.00 | 1.00 | 0/20 (0%) | 0.052 ms | 0.097 ms |
+| Regex-only | 0.66 | 0.88 | 0.75 | 8/20 (40%) | 0.030 ms | 0.055 ms |
+| Presidio | 0.76 | 0.70 | 0.73 | 7/20 (35%) | 9.323 ms | 27.640 ms |
+| Presidio custom | 0.81 | 0.97 | 0.89 | 7/20 (35%) | 7.986 ms | 11.041 ms |
+| Presidio normalized | 0.82 | 1.00 | 0.90 | 7/20 (35%) | 7.976 ms | 10.086 ms |
 
 On this dataset, KAVACH reported per-type precision/recall/F1 of 1.00 for Aadhaar, card, email, GSTIN, PAN, phone, and UPI ID. This result applies only to the tested cases. The dataset is small and hand-written, so perfect scores do not establish real-world performance or generalization. The negative false-alarm result is based on only 20 negative prompts.
 
 The latency figures above are detector/evaluation measurements; they do **not** include local-LLM inference or represent end-to-end API latency. The agent has not yet been evaluated against a sufficiently large labelled set for advisory-review accuracy, and its model latency varies with startup and host performance.
+
+## Holdout regression evaluation
+
+Latest rerun (29 October 2026): `eval/gold/gold_holdout.txt`,
+containing 43 hand-written prompts (17 tagged `real`, 6 tagged
+`tricky`, and 20 tagged `neg`).
+
+| System | Micro F1 | Negative prompts flagged | p50 latency | p95 latency |
+|---|---:|---:|---:|---:|
+| KAVACH | 1.00 | 0/20 (0%) | 0.039 ms | 0.067 ms |
+| KAVACH block | 1.00 | 0/20 (0%) | 0.037 ms | 0.062 ms |
+| Regex-only | 0.65 | 5/20 (25%) | 0.029 ms | 0.043 ms |
+| Presidio | 0.77 | 1/20 (5%) | 7.368 ms | 12.066 ms |
+| Presidio custom | 0.86 | 1/20 (5%) | 7.381 ms | 9.323 ms |
+| Presidio normalized | 0.86 | 1/20 (5%) | 7.721 ms | 11.032 ms |
+
+KAVACH reported precision, recall, and F1 of 1.00 for all listed
+entity types in this run. The separate synthetic benchmark run also
+reported zero false alarms on 210 clean sentences.
+
+A normalized prompt audit found no duplicate prompts within either
+the 51-prompt gold set or the 43-prompt regression set, and no exact
+normalized prompt overlap between them. However, this regression set
+was previously used to identify and guide detector fixes. It is
+therefore **not an untouched blind test set** and must not be presented
+as independent proof of generalization. Both datasets are small,
+hand-written, synthetic evaluation resources; broader representative
+testing remains necessary.
 
 ## Privacy and limitations
 
