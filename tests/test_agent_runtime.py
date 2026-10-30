@@ -25,6 +25,85 @@ class AutonomousAgentRuntimeTests(unittest.TestCase):
             "confidence": 0.97,
         }
 
+    def test_partial_phone_suffix_is_not_remasked_as_person(self):
+        prompt = (
+            "Contact Demo User.\n"
+            "Phone: 9876543210\n"
+            "Email: demo@example.com\n"
+        )
+
+        result = run_autonomous_privacy_agent(
+            prompt,
+            mode="partial",
+            enabled=False,
+        )
+
+        self.assertEqual(
+            result["masked_text"],
+            "Contact Demo User.\n"
+            "Phone: XXXXXX3210\n"
+            "Email: [EMAIL]\n",
+        )
+        self.assertEqual(result["verification"]["status"], "passed")
+        self.assertEqual(
+            result["verification"]["remaining_supported_findings"],
+            0,
+        )
+        self.assertNotIn(
+            "remask_remaining_findings",
+            result["agent_execution"]["tool_calls"],
+        )
+
+    def test_genuine_verification_residual_is_remasked(self):
+        prompt = "Contact demo@example.com and call 9876543210"
+        initial_masked = "Contact [EMAIL] and call 9876543210"
+        final_masked = "Contact [EMAIL] and call [PHONE]"
+
+        phone_start = initial_masked.index("9876543210")
+        residual_phone = {
+            "type": "PHONE",
+            "start": phone_start,
+            "end": phone_start + len("9876543210"),
+            "confidence": 0.85,
+        }
+
+        runtime = PrivacyToolRuntime(prompt, "label")
+
+        with patch(
+            "kavach.agent_runtime.analyze_global",
+            side_effect=[
+                scan_result(
+                    [self.finding],
+                    initial_masked,
+                ),
+                scan_result(
+                    [residual_phone],
+                    final_masked,
+                ),
+                scan_result(
+                    [],
+                    final_masked,
+                ),
+            ],
+        ):
+            runtime.execute("scan_prompt", {})
+            runtime.execute("verify_masked_output", {})
+
+            self.assertFalse(runtime.verification_passed)
+
+            runtime.execute("remask_remaining_findings", {})
+
+            self.assertEqual(runtime._masked_text, final_masked)
+
+            runtime.execute("verify_masked_output", {})
+
+        self.assertTrue(runtime.verification_passed)
+        self.assertEqual(
+            runtime._masked_text,
+            final_masked,
+        )
+
+
     def test_available_tools_advance_with_workflow_state(self):
         runtime = PrivacyToolRuntime(self.prompt, "label")
 

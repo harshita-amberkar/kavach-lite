@@ -6,6 +6,7 @@ authoritative; the model cannot access arbitrary files or run shell code.
 """
 
 import json
+import re
 
 import httpx
 
@@ -85,6 +86,108 @@ def _finding_metadata(findings):
     return output
 
 
+_PARTIAL_MASK_TYPES = {"AADHAAR", "CARD", "PHONE"}
+
+
+def _partial_mask_spans(text, findings, mode):
+    """Map intentionally partial-masked spans into the masked output."""
+    if mode != "partial" or not isinstance(text, str):
+        return []
+
+    valid = [
+        item for item in findings
+        if isinstance(item, dict)
+        and isinstance(item.get("start"), int)
+        and isinstance(item.get("end"), int)
+    ]
+
+    spans = []
+    offset_delta = 0
+
+    for item in sorted(valid, key=lambda item: item["start"]):
+        start = item["start"]
+        end = item["end"]
+        kind = str(item.get("type", "UNKNOWN"))
+
+        if start < 0 or end < start or end > len(text):
+            continue
+
+        original_segment = text[start:end]
+
+        if kind in _PARTIAL_MASK_TYPES:
+            digits = re.sub(r"\D", "", original_segment)
+            replacement = (
+                "X" * max(len(digits) - 4, 0)
+                + digits[-4:]
+            )
+            masked_start = start + offset_delta
+
+            if replacement:
+                spans.append(
+                    (masked_start, masked_start + len(replacement))
+                )
+        else:
+            replacement = f"[{kind}]"
+
+        offset_delta += len(replacement) - (end - start)
+
+    return spans
+
+
+def _neutralize_partial_mask_spans(text, spans):
+    """Replace intentional partial-mask fragments with spaces for rescanning.
+
+    Spaces preserve string length, so verification finding offsets remain
+    valid against the real protected output.
+    """
+    characters = list(text)
+
+    for start, end in spans:
+        if (
+            isinstance(start, int)
+            and isinstance(end, int)
+            and 0 <= start <= end <= len(characters)
+        ):
+            characters[start:end] = [" "] * (end - start)
+
+    return "".join(characters)
+
+
+def _apply_metadata_masks(text, findings):
+    """Label-mask residual findings using offsets from verification text."""
+    output = text
+    valid = []
+
+    for item in findings:
+        if not isinstance(item, dict):
+            continue
+
+        start = item.get("start")
+        end = item.get("end")
+        kind = item.get("type", "UNKNOWN")
+
+        if (
+            not isinstance(start, int)
+            or not isinstance(end, int)
+            or start < 0
+            or end < start
+            or end > len(text)
+            or not isinstance(kind, str)
+            or not kind
+            or not all(char.isalnum() or char == "_" for char in kind)
+        ):
+            continue
+
+        valid.append((start, end, kind))
+
+    for start, end, kind in sorted(
+        valid, key=lambda item: item[0], reverse=True
+    ):
+        output = output[:start] + f"[{kind}]" + output[end:]
+
+    return output
+
+
 class PrivacyToolRuntime:
     """Own the prompt in local memory and expose only safe tool observations."""
 
@@ -96,6 +199,7 @@ class PrivacyToolRuntime:
         self._mode = mode
         self._scan = None
         self._masked_text = None
+        self._partial_mask_spans = []
         self._verification = None
         self._remask_rounds = 0
         self._review_reasons = []
@@ -307,6 +411,9 @@ class PrivacyToolRuntime:
                 "findings": findings,
             }
             self._masked_text = masked_text
+            self._partial_mask_spans = _partial_mask_spans(
+                self._original_text, findings, self._mode
+            )
 
             observation = {
                 "scan_complete": True,
@@ -326,7 +433,10 @@ class PrivacyToolRuntime:
             if self._scan is None or self._masked_text is None:
                 raise ToolExecutionError("scan_required")
 
-            result = analyze_global(self._masked_text, "label")
+            verification_input = _neutralize_partial_mask_spans(
+                self._masked_text, self._partial_mask_spans
+            )
+            result = analyze_global(verification_input, "label")
             if not isinstance(result, dict):
                 raise ToolExecutionError("invalid_verification_result")
 
@@ -371,7 +481,9 @@ class PrivacyToolRuntime:
                     "remaining_findings_count": len(residual),
                 }
             else:
-                candidate = self._verification.get("masked_text")
+                candidate = _apply_metadata_masks(
+                    self._masked_text, residual
+                )
                 if not isinstance(candidate, str) or candidate == self._masked_text:
                     self.request_review("remediation_failed")
                     observation = {
