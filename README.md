@@ -11,27 +11,94 @@ KAVACH is a development project, not a guarantee that every sensitive value or d
 - **Checksum/context checks:** Aadhaar Verhoeff, GSTIN check-character, and card Luhn validation help reduce certain false positives.
 - **Masking and risk scoring:** scan responses include finding types, character offsets, confidence scores, masked text, and a risk assessment.
 - **Chrome extension:** prompt scanning and configurable allow, warn, mask, and block actions for ChatGPT, Claude, and Gemini. Website UI changes can affect compatibility.
-- **FastAPI backend:** text scanning, file scanning, and a configured OpenAI-compatible chat-completions proxy route.
+- **FastAPI backend:** text scanning, file scanning, global detection, autonomous workflow execution, and a configured OpenAI-compatible chat-completions proxy route.
+- **User-focused dashboard:** Protect and Settings sections, persistent browser-local defaults, a shared protected preview, and a simple protection summary.
 - **Evaluation lab:** hand-written gold-set evaluation, synthetic benchmarks, comparison systems, and Python/JavaScript detector-parity tests.
 - **Bounded autonomous local agent:** When enabled, Ollama (`llama3.2:3b` by default) selects from an allowlist of workflow tools. Python executes those tools; deterministic detection, masking, and verification remain authoritative. The agent is disabled by default, uses safe workflow metadata for planning, and cannot run arbitrary shell commands or access arbitrary files.
 
 **Novelty note:** Microsoft Presidio already has `IN_AADHAAR` and `IN_PAN` recognizers, and commercial data-protection products exist. KAVACH does not claim that Indian-ID detection alone is novel. Its project focus is the evaluated combination of India-aware detection, prompt-time browser protection, policy actions, and a local advisory workflow.
 
+## Dashboard
+
+The dashboard is designed around two user-facing sections:
+
+- **Protect:** paste a prompt, choose a protection mode, choose a masking
+  format, run the check, inspect detected items, review the protected
+  preview, and copy the protected text.
+- **Settings:** save the default protection mode and masking format,
+  find the Chrome extension policy instructions, and review local server
+  and AI configuration information.
+
+### Protection modes
+
+| Mode | Behavior |
+|---|---|
+| Standard | Calls the global scan endpoint and displays the protected result. |
+| Autonomous | Runs the bounded multi-step workflow, including verification and audit recording. |
+
+### Masking formats
+
+| Format | Behavior |
+|---|---|
+| Label | Replaces detected values with labels such as `[EMAIL]` or `[PHONE]`. |
+| Partial | Preserves the last four digits for supported Aadhaar, card, and phone findings. Other findings continue to use labels. |
+
+Protection mode and masking format are separate choices.
+
+Dashboard defaults are stored in browser local storage. They apply to the
+dashboard in that browser and are not server-wide settings.
+
+Chrome extension policies are separate. They are configured from the
+extension Options page and stored using Chrome extension storage.
+
+The dashboard intentionally does not show a separate Recent Activity
+page. Autonomous workflow metadata is still recorded by the backend and
+can be retrieved through the audit history API.
+
+The Protect workspace also supports TXT and text-based PDF scanning,
+subject to the application's file-size limit.
+
 ## Architecture
 
 ```text
-User prompt
-    |
-    +--> Chrome extension --> JavaScript detector --> policy action
-    |
-    +--> FastAPI /api/scan --> Python detection engine
-                                  |
-                                  +--> findings, masked text, risk
-                                  |
-                                  +--> bounded local Ollama tool planner
-                                       (safe metadata; allowlisted tools)
+                         +----------------------+
+                         |      KAVACH User     |
+                         +----------+-----------+
+                                    |
+                  +-----------------+-----------------+
+                  |                                   |
+          +-------v--------+                  +-------v---------+
+          | Chrome         |                  | Dashboard       |
+          | Extension      |                  | Protect /       |
+          | JavaScript     |                  | Settings        |
+          | detector       |                  +-------+---------+
+          +-------+--------+                          |
+                  |                     +-------------+-------------+
+                  |                     |                           |
+          +-------v--------+    +-------v---------+        +--------v--------+
+          | Extension      |    | Standard        |        | Autonomous      |
+          | Allow / Warn / |    | /api/scan-global|        | /api/agentic/   |
+          | Mask / Block   |    +-------+---------+        | scan            |
+          +----------------+            |                  +--------+--------+
+                                        |                           |
+                              +---------v---------------------------v--+
+                              | KAVACH Global Detection                |
+                              | KAVACH rules + Presidio + context rules|
+                              +-------------------+--------------------+
+                                                  |
+                                         +--------v--------+
+                                         | Masking and     |
+                                         | risk assessment |
+                                         +--------+--------+
+                                                  |
+                                      Autonomous verification
+                                      and metadata-only audit
+                                                  |
+                                         +--------v--------+
+                                         | Protected output|
+                                         +-----------------+
 
-Gold dataset / benchmark --> evaluation reports in results/
+Gold / synthetic datasets --> Evaluation reports
 ```
 
 The extension and backend are separate execution paths. They share detector behavior through a JavaScript/Python parity suite, but each path still needs independent integration testing. The autonomous agent uses a bounded tool loop; deterministic scanning, masking, and verification remain authoritative.
@@ -68,6 +135,19 @@ Useful URLs:
 - Registered API schema: `http://127.0.0.1:8000/openapi.json`
 
 The health endpoint in this version is `/api/health` (not `/health`).
+
+The dashboard and protected API routes use the `X-KAVACH-Token` header.
+For a local demo, configure a token in the same PowerShell process that
+starts Uvicorn:
+
+```powershell
+$env:KAVACH_API_TOKEN = [guid]::NewGuid().ToString("N")
+Set-Clipboard $env:KAVACH_API_TOKEN
+```
+
+Paste the copied token when the dashboard requests it. Do not commit,
+share, or include the token in screenshots or logs.
+
 
 ### Optional autonomous local-agent setup
 
@@ -113,7 +193,7 @@ python -m uvicorn app:app --reload
 3. Select **Load unpacked** and choose the project's `extension/` directory.
 4. Test using synthetic text only, and review the extension's configured policies before demonstration.
 
-The extension targets ChatGPT, Claude, and Gemini. Changes to those sites' interfaces can require compatibility fixes. Manual checks have previously reported clean-prompt submission, email warning, masking, and blocking working; this is not comprehensive browser compatibility certification.
+The extension targets ChatGPT, Claude, and Gemini. The developer previously reported 30/30 manual checks across these sites (16 ChatGPT, 7 Claude, 7 Gemini). These are limited manual checks, not comprehensive browser compatibility certification; website interface changes can require compatibility fixes.
 
 ## API
 
@@ -140,11 +220,30 @@ Contact [EMAIL] for support.
 
 The agent review is an advisory output. It does not modify the original findings, masked text, risk score, or policy actions.
 
+### `POST /api/scan-global`
+
+Runs the global detection pipeline, combining KAVACH rules, Presidio
+recognizers, and contextual rules. The request accepts the same `text`
+and `mode` fields as `/api/scan`, where `mode` is `label` or `partial`.
+
+The Standard dashboard protection mode uses this endpoint. Its response
+includes findings, masked text, risk information, and global-detection
+metadata.
+
+Example request:
+
+```json
+{
+  "text": "Contact demo@example.com for support.",
+  "mode": "partial"
+}
+```
+
 ### Autonomous agent endpoint
 
-`POST /api/agentic/scan` runs the bounded agent workflow. The model may select only tools currently eligible for the workflow state; Python executes the approved actions. Scanning and masking are deterministic, and the masked output is verified before normal completion. Invalid actions or planner failures can trigger safe fallback and human review.
+`POST /api/agentic/scan` runs the bounded agent workflow. The request accepts `text` and a masking `mode` of `label` or `partial`. The model may select only tools currently eligible for the workflow state; Python executes the approved actions. Scanning and masking are deterministic, and the masked output is verified before normal completion. Invalid actions or planner failures can trigger safe fallback and human review. The dashboard presents a simplified Protection Summary instead of exposing internal tool execution details.
 
-`GET /api/agentic/history` returns audit metadata. Raw prompts and sensitive values should not be stored in audit records.
+`GET /api/agentic/history` returns autonomous workflow audit metadata. The dashboard does not currently expose this as a Recent Activity page. Raw prompts and sensitive values should not be stored in audit records.
 
 ### Other routes
 
@@ -161,6 +260,12 @@ Run these from the project root.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -v
+```
+
+### Dashboard JavaScript syntax
+
+```powershell
+node --check .\static\app.js
 ```
 
 ### Extension policy/privacy and detector parity
@@ -188,16 +293,47 @@ The evaluation runner writes `results/report.md`, `results/report.json`, and `re
 
 ## Current verification status
 
-The most recent reported release-check run completed successfully:
+The latest completed project verification run after the dashboard and
+autonomous Partial-masking updates reported:
 
-- Python unit tests: **55 passed** in the most recent full verified run.
-- Extension policy/privacy checks: **passed**.
-- JavaScript/Python detector parity: **1,557 of 1,557 cases matched**.
-- Python syntax checks for `app.py`, `kavach/agent.py`, and `kavach/detectors.py`: **passed**.
-- Live autonomous-runtime smoke test with Ollama (`llama3.2:3b`): synthetic email masked, verification passed, no fallback, and no human review required.
-- Live `POST /api/agentic/scan` integration smoke test: HTTP 200, expected masked output, completed status, no fallback, verification passed, and no human review required.
+- Python unit tests: **57 passed**.
+- Dashboard JavaScript syntax check: **passed**.
+- Python syntax checks for the application and autonomous runtime: **passed**.
+- Extension policy/privacy tests: **passed**.
+- Python/JavaScript detector parity: **1,557 of 1,557 cases identical**.
+- Git whitespace check: **passed**.
+- Autonomous Partial-masking regression test: **passed**.
+- Genuine residual-finding remediation regression test: **passed**.
 
-These are reported development checks. The live agent results are smoke tests, not an accuracy study of model judgments.
+The live dashboard smoke test reported the expected Autonomous + Partial
+output for the synthetic phone/email prompt. This is a developer-run
+functional check, not a broad accuracy or security certification.
+
+These results describe the tested development version. Repeat the checks
+before a release or demonstration.
+
+## Locked v1 evaluation
+
+The separate frozen synthetic dataset
+`eval/gold/gold_locked_v1.txt` contains 51 prompts:
+
+- 12 tagged `real`
+- 12 tagged `tricky`
+- 27 tagged `neg`
+
+The latest recorded run (29 October 2026) reported:
+
+| System | Micro precision | Micro recall | Micro F1 | Negative prompts flagged | p50 latency | p95 latency |
+|---|---:|---:|---:|---:|---:|---:|
+| KAVACH | 1.00 | 1.00 | 1.00 | 0/27 (0%) | 0.032 ms | 0.058 ms |
+| KAVACH block | 1.00 | 1.00 | 1.00 | 0/27 (0%) | 0.029 ms | 0.040 ms |
+
+The recorded reports are stored in `results/locked_v1_current/`
+(`report.md`, `report.json`, and `errors.jsonl`).
+
+This is a small synthetic evaluation set. Its results describe only
+these test cases and do not establish production-wide accuracy or
+generalization to unseen real-world data.
 
 ## Gold-set benchmark results
 
@@ -258,14 +394,26 @@ testing remains necessary.
 
 ## Demo checklist
 
-1. Start Ollama if demonstrating the optional agent, and confirm `llama3.2:3b` is available.
-2. Start the FastAPI service; confirm `GET /api/health` returns `status: ok`.
-3. Open `/docs` and demonstrate a clean prompt and a synthetic prompt containing an email, PAN, or UPI ID.
-4. Demonstrate the masked text, finding type, and risk score.
-5. Enable `KAVACH_AGENT_ENABLED=1` and show the additional advisory review. Explain that it does not change detection or policy decisions.
-6. Load the `extension/` directory unpacked in Chrome and demonstrate warning/masking behavior on a supported AI site using synthetic text.
-7. Run the Python and extension test commands and show the current gold-set report.
-8. State the dataset size, limitations, and best-effort nature of agent sanitization honestly.
+For the full reproducible procedure, see
+[`docs/demo_runbook.md`](docs/demo_runbook.md).
+
+1. Check that Ollama and the configured `llama3.2:3b` model are available
+   when demonstrating the optional local agent.
+2. Start the FastAPI server with a local API token and confirm
+   `GET /api/health` returns `status: ok`.
+3. Open the dashboard and demonstrate its Protect and Settings sections.
+4. Save the default protection mode and masking format, refresh the
+   browser, and show that the preferences persist.
+5. Demonstrate Standard + Label and Standard + Partial masking with
+   synthetic phone and email data.
+6. Demonstrate Autonomous + Partial masking and explain the simplified
+   Protection Summary. Show the verification result only when it is
+   accurately reported by the workflow.
+7. Demonstrate document scanning and downloading the masked TXT output.
+8. Load the unpacked Chrome extension and demonstrate its warning,
+   masking, and blocking policies on supported AI sites.
+9. Run the Python, dashboard JavaScript, and extension test commands.
+10. Present evaluation dataset sizes, metrics, and limitations honestly.
 
 ## Responsible use
 
