@@ -1,7 +1,7 @@
 # KAVACH Lite — Demo Runbook
 
-**Updated:** 30 October 2026
-**Latest application commit:** `e9c2cc6`
+**Updated:** 31 October 2026
+**Application commit:** run `git rev-parse --short HEAD`; update this field after the final reviewed commit.
 
 ## 1. Project overview
 
@@ -411,3 +411,11 @@ results.
 - [ ] Python and extension tests pass.
 - [ ] Evaluation results shown with dataset sizes and limitations.
 - [ ] No tokens or real sensitive values appear in screenshots or logs.
+
+## Chat-completions proxy and privacy boundaries
+
+`POST /v1/chat/completions` is a separate configured upstream proxy route. The current implementation calls `analyze_global()` for message content and forwards a masked payload. The global detector invokes Presidio with `language="en"`; contextual and KAVACH-native rules also run. Do not describe this as multilingual detection.
+
+The automated proxy tests currently use a mocked upstream client. Use synthetic data and a mock upstream while validating the route. Before connecting it to a real provider or using real prompts, review authentication, origin checks, upstream allowlisting, request limits, masking/blocking policy, errors, logging, and deployment exposure. Keep the demo server bound to `127.0.0.1`.
+
+The Chrome extension performs prompt scanning in the browser. Its per-type policy settings use Chrome Sync storage. The extension does not send prompt contents to a KAVACH server based on the inspected source; when a user submits a prompt, the destination AI provider receives it under that provider's own terms and privacy policy. This statement applies to the extension, not the separate chat proxy.

@@ -16,6 +16,8 @@ KAVACH is a development project, not a guarantee that every sensitive value or d
 - **Evaluation lab:** hand-written gold-set evaluation, synthetic benchmarks, comparison systems, and Python/JavaScript detector-parity tests.
 - **Bounded autonomous local agent:** When enabled, Ollama (`llama3.2:3b` by default) selects from an allowlist of workflow tools. Python executes those tools; deterministic detection, masking, and verification remain authoritative. The agent is disabled by default, uses safe workflow metadata for planning, and cannot run arbitrary shell commands or access arbitrary files.
 
+Prompt scanning in the Chrome extension is performed in the browser. Its per-type policy settings use `chrome.storage.sync`; the extension source inspected for this review contains no direct `fetch`, `XMLHttpRequest`, `sendBeacon`, or WebSocket calls. This describes the extension path only. It does not describe the separate FastAPI chat-completions proxy or the destination AI service.
+
 **Novelty note:** Microsoft Presidio already has `IN_AADHAAR` and `IN_PAN` recognizers, and commercial data-protection products exist. KAVACH does not claim that Indian-ID detection alone is novel. Its project focus is the evaluated combination of India-aware detection, prompt-time browser protection, policy actions, and a local advisory workflow.
 
 ## Dashboard
@@ -250,7 +252,11 @@ Example request:
 - `POST /api/scan-file`
 - `POST /v1/chat/completions`
 
-The chat-completions route is a configured upstream proxy. Before using it with real data, separately review and test upstream forwarding, authentication, masking, blocking, error handling, and deployment configuration. Do not assume it is production-ready based only on the scan tests.
+The chat-completions route is a configured upstream proxy. It runs the global detector (`analyze_global`) on message content and applies label masking before constructing the payload forwarded upstream. Its redaction count is based on the findings returned by that global pass. This is broader than the lightweight `analyze()` path used by `POST /api/scan`.
+
+**Language limitation:** the Presidio component of the global detector is explicitly invoked with `language="en"`. KAVACH's native rules and selected contextual rules also run, but this does not establish multilingual Presidio coverage or validated detection quality for Hindi, Marathi, or Hinglish.
+
+Before using the proxy with real data, separately review and test upstream forwarding, authentication, masking, blocking, error handling, rate limits, and deployment configuration. The current automated proxy tests use a mocked upstream; do not assume the route is production-ready based only on scan or mock-proxy tests.
 
 ## Tests
 

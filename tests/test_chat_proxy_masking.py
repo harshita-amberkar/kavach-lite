@@ -123,5 +123,139 @@ class ChatProxyMaskingTests(unittest.TestCase):
         print("Forwarded message:", forwarded_text)
 
 
+    def test_global_finding_is_masked_before_forwarding(self):
+        """The chat proxy must use global detection and forward masked text."""
+        mock_client = MockUpstreamClient()
+        content = "Morgan Example is assigned to the case."
+
+        global_result = {
+            "findings": [
+                {
+                    "type": "PERSON",
+                    "start": 0,
+                    "end": 14,
+                    "confidence": 0.99,
+                    "value": "Morgan Example",
+                }
+            ],
+            "masked_text": "[PERSON] is assigned to the case.",
+            "risk": {"level": "medium", "score": 15},
+        }
+
+        headers = {
+            "x-kavach-token": kavach_app.app.state.api_token,
+            "Authorization": "Bearer test-only-provider-token",
+        }
+        request_body = {
+            "model": "test-model",
+            "messages": [{"role": "user", "content": content}],
+        }
+
+        with patch(
+            "app.analyze_global",
+            return_value=global_result,
+        ) as global_scan:
+            with patch(
+                "app.analyze",
+                side_effect=AssertionError(
+                    "The chat proxy must use analyze_global(), not analyze()."
+                ),
+            ):
+                with patch(
+                    "app.httpx.AsyncClient",
+                    return_value=mock_client,
+                ):
+                    with TestClient(
+                        kavach_app.app,
+                        base_url="http://127.0.0.1",
+                    ) as client:
+                        response = client.post(
+                            "/v1/chat/completions",
+                            headers=headers,
+                            json=request_body,
+                        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        global_scan.assert_called_once_with(content)
+        self.assertIsNotNone(mock_client.captured_payload)
+
+        forwarded_text = mock_client.captured_payload["messages"][0]["content"]
+        self.assertEqual(
+            forwarded_text,
+            "[PERSON] is assigned to the case.",
+        )
+        self.assertNotIn("Morgan Example", forwarded_text)
+        self.assertEqual(response.headers.get("X-Kavach-Redactions"), "1")
+
+
+    def test_real_global_context_finding_is_masked_before_forwarding(self):
+        """Exercise a real global-only context rule through the proxy."""
+        mock_client = MockUpstreamClient()
+        content = "Our fictional company has an unannounced product roadmap."
+
+        legacy_result = kavach_app.analyze(content)
+        self.assertFalse(
+            any(
+                finding.get("type") == "CONFIDENTIAL_BUSINESS"
+                for finding in legacy_result.get("findings", [])
+            ),
+            "The fixture should be global-only, not detected by analyze().",
+        )
+
+        direct_global_result = kavach_app.analyze_global(content)
+        self.assertIn("[CONFIDENTIAL_BUSINESS]", direct_global_result.get("masked_text", ""))
+        self.assertTrue(
+            any(
+                finding.get("type") == "CONFIDENTIAL_BUSINESS"
+                for finding in direct_global_result.get("findings", [])
+            ),
+            "The global contextual rule should detect the synthetic fixture.",
+        )
+
+        headers = {
+            "x-kavach-token": kavach_app.app.state.api_token,
+            "Authorization": "Bearer test-only-provider-token",
+        }
+        request_body = {
+            "model": "test-model",
+            "messages": [{"role": "user", "content": content}],
+        }
+
+        with patch(
+            "app.analyze_global",
+            wraps=kavach_app.analyze_global,
+        ) as global_scan:
+            with patch(
+                "app.analyze",
+                side_effect=AssertionError(
+                    "The chat proxy must not fall back to analyze()."
+                ),
+            ):
+                with patch(
+                    "app.httpx.AsyncClient",
+                    return_value=mock_client,
+                ):
+                    with TestClient(
+                        kavach_app.app,
+                        base_url="http://127.0.0.1",
+                    ) as client:
+                        response = client.post(
+                            "/v1/chat/completions",
+                            headers=headers,
+                            json=request_body,
+                        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        global_scan.assert_called_once_with(content)
+        self.assertIsNotNone(mock_client.captured_payload)
+        forwarded_text = mock_client.captured_payload["messages"][0]["content"]
+        self.assertIn("[CONFIDENTIAL_BUSINESS]", forwarded_text)
+        self.assertNotIn("unannounced product roadmap", forwarded_text.lower())
+        self.assertEqual(
+            response.headers.get("X-Kavach-Redactions"),
+            str(len(direct_global_result.get("findings", []))),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

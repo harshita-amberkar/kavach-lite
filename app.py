@@ -694,7 +694,7 @@ def validate_and_mask_chat_payload(payload: dict):
                 ),
             )
 
-        result = analyze(content)
+        result = analyze_global(content)
         findings = result.get("findings", [])
         redactions += len(findings)
 
