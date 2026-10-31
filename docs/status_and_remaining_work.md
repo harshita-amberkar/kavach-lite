@@ -18,7 +18,7 @@
 
 The latest recorded preflight after the proxy detector change reported:
 
-- 59 Python unit tests passed.
+- 62 Python unit tests passed.
 - Python bytecode compilation passed.
 - Eight blind-gold validator self-tests passed.
 - Extension policy/privacy tests passed.
@@ -31,7 +31,7 @@ These results apply to that checkout and test run. Rerun the preflight after sub
 
 ## Remaining before final submission
 
-1. **Proxy end-to-end regression: COMPLETED.** All three proxy tests passed, including a real global-only contextual-rule finding through a mocked upstream. The raw synthetic phrase was absent from the forwarded payload.
+1. **Proxy end-to-end regression: COMPLETED.** All six proxy tests passed: email masking, mocked global finding, real contextual finding, bearer-secret masking, high-risk blocking before forwarding, and contextual fallback when Presidio is unavailable.
 2. **Documentation and privacy wording: UPDATED.** README, demo runbook, extension options page and manifest now distinguish local browser scanning, Chrome Sync policy storage, the destination AI provider and the separate FastAPI proxy.
 3. **Security validation:** independently review authentication, origin enforcement, upstream allowlisting, request limits, blocking/error handling, logging, extension behavior and deployment exposure. Do not call the proxy production-ready solely because mocked tests pass.
 4. **Independent synthetic holdout:** collect 30–40 human-authored prompts from 3–4 people who have not seen the code, existing gold prompts or results. Use only synthetic values, freeze the commit, hash the dataset and run once. Do not tune against it.

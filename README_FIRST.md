@@ -23,8 +23,8 @@ This folder contains reviewed support material for final validation. The proxy/g
 
 ## Recommended order
 
-1. The chat proxy now uses `analyze_global()`. All three proxy masking tests passed, including a real global-only contextual-rule test using a mocked upstream.
-2. The full Windows preflight passed on 31 October 2026: 59 Python tests, eight validator self-tests, extension checks, 1,557/1,557 detector parity and syntax checks.
+1. The chat proxy now uses `analyze_global()`. All six proxy masking tests passed, covering email, global findings, contextual masking, bearer-secret masking, high-risk blocking and Presidio-failure fallback.
+2. The full Windows preflight passed on 31 October 2026: 62 Python tests, eight validator self-tests, extension checks, 1,557/1,557 detector parity and syntax checks.
 3. Review the final Git diff and commit only approved source, tests, tools and documentation. Ensure `git status` is clean.
 4. Record the frozen Git commit before any participant writes prompts.
 5. Give the instructions to 3?4 people who have not seen KAVACH code, existing gold prompts, previous results or scanner output. Use only synthetic values.

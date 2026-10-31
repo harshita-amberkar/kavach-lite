@@ -72,7 +72,7 @@ The inspected backend generates a process token when `KAVACH_API_TOKEN` is absen
 - The chat proxy uses `analyze_global()` and masks a real `CONFIDENTIAL_BUSINESS` contextual-rule finding before a mocked upstream receives the message.
 - Proxy email masking and mocked global-detector masking tests passed.
 - Existing security tests passed for API-token enforcement, health access, same-origin requests, cross-origin rejection and untrusted-host rejection.
-- The full preflight passed with 59 Python tests, eight validator self-tests, extension policy/privacy checks and 1,557/1,557 Python/JavaScript parity.
+- The full preflight passed with 62 Python tests, eight validator self-tests, extension policy/privacy checks and 1,557/1,557 Python/JavaScript parity.
 
 **Still recommended before any real-provider or non-local deployment:**
 

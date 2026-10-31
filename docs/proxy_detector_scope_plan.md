@@ -17,15 +17,18 @@ The current `tests/test_chat_proxy_masking.py` contains:
 
 1. A mocked-upstream test confirming an email is masked before forwarding.
 2. A mocked global-detector test confirming that the proxy calls `analyze_global()`, forwards its masked text, and reports the redaction count.
-3. A real contextual-rule test using a fictional confidential-business sentence that triggers `CONFIDENTIAL_BUSINESS` in `analyze_global()` but not in `analyze()`. This test passed on the Windows checkout.
+3. A real contextual-rule test using a fictional confidential-business sentence that triggers `CONFIDENTIAL_BUSINESS` in `analyze_global()` but not in `analyze()`.
+4. A bearer-secret test confirming that the raw synthetic canary is absent from the mock-upstream payload.
+5. A high-risk blocking test confirming HTTP 422 and zero upstream requests.
+6. A Presidio-failure test confirming contextual masking still occurs.
 
-All three proxy tests passed on 31 October 2026. The real contextual-rule test exercised the actual global detector through the proxy and verified that the mock upstream received masked content.
+All six proxy tests passed on 31 October 2026. They cover masking, redaction accounting, secret removal, high-risk blocking and contextual fallback when Presidio is unavailable. All use a mocked upstream.
 
 ## Remaining validation
 
 - Completed: the real global-only contextual rule was exercised through the proxy using a mocked upstream; the original synthetic phrase was absent from the forwarded payload.
 - Retain tests for masking, redaction accounting and existing auth/origin/allowlist/request-validation behavior.
-- Completed: full Windows preflight passed on 31 October 2026 with 59 Python tests and all recorded validator, extension, parity and syntax checks.
+- Completed: full Windows preflight passed on 31 October 2026 with 62 Python tests and all recorded validator, extension, parity and syntax checks.
 - Measure detector/proxy latency if making performance claims. Do not infer end-to-end latency from detector-only timings.
 - Keep the proxy bound to a local/mock upstream until authentication, upstream forwarding, blocking, error handling, rate limits and deployment configuration have been independently reviewed.
 
