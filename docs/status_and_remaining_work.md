@@ -53,3 +53,14 @@ These results apply to that checkout and test run. Rerun the preflight after sub
 - Reviewed files are committed and `git status` is clean before independent data collection.
 - Independent holdout is collected, hashed and run once without tuning.
 - Final report and presentation clearly state scope, limits, test evidence and what remains unverified.
+
+
+## Manual browser extension validation ? 31 October 2026
+
+User-reported manual tests completed successfully:
+
+- EMAIL Mask, Warn and Block policies passed on ChatGPT, Claude and Gemini.
+- EMAIL Block policy persisted after reloading the Chrome extension.
+- A synthetic PAN-format value was detected and masked as `[PAN]` on ChatGPT.
+
+Scope note: These are manual browser validation results, not an independent security audit or proof that every identifier, browser version, device or application state has been tested.
