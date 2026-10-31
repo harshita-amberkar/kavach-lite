@@ -1,5 +1,7 @@
 # KAVACH Lite — Remaining validation work pack
 
+> **Status:** the independent blind holdout (steps 4-7 below) was NOT carried out; the project has a single developer. All reported results are self-authored.
+
 This folder contains reviewed support material for final validation. The proxy/global-detector decision has already been implemented in the current checkout; see `docs/proxy_detector_scope_plan.md` for the current state and remaining regression coverage.
 
 ## Included
