@@ -302,7 +302,7 @@ The evaluation runner writes `results/report.md`, `results/report.json`, and `re
 The latest completed project verification run after the dashboard and
 autonomous Partial-masking updates reported:
 
-- Python unit tests: **57 passed**.
+- Python unit tests: **67 passed** (full preflight, 31 October 2026).
 - Dashboard JavaScript syntax check: **passed**.
 - Python syntax checks for the application and autonomous runtime: **passed**.
 - Extension policy/privacy tests: **passed**.
@@ -385,6 +385,27 @@ therefore **not an untouched blind test set** and must not be presented
 as independent proof of generalization. Both datasets are small,
 hand-written, synthetic evaluation resources; broader representative
 testing remains necessary.
+
+## Global detector benchmark (31 October 2026)
+
+Generated synthetic test split: 165 prompts, 45 of them negative. Self-authored; not an independent evaluation.
+
+| System | MICRO_ALL F1 | MICRO_SHARED F1 | Negative prompts flagged | p50 / p95 latency |
+|---|---:|---:|---:|---:|
+| KAVACH (native) | 1.00 | 1.00 | 0/45 | 0.067 / 0.092 ms |
+| KAVACH Global | 0.96 | 1.00 | 0/45 | 7.490 / 12.693 ms |
+
+The global detector first flagged 14/45 negatives (31.1%), caused by Presidio PERSON hits on ordinary words and a PHONE hit on an order ID. Context filters fixed these (five regression tests added). PERSON and LOCATION have no gold positives, so their quality is **not measured** and should be treated as experimental. PERSON is accepted only with explicit English name context.
+
+## What the evidence does and does not show
+
+- Presidio, given a one-line Devanagari-to-ASCII digit step ("Presidio normalized"), nearly matches KAVACH on these datasets (Micro F1 0.90 vs 1.00 on the 51-prompt set). KAVACH's advantage is that it normalises by default and avoids matching inside longer digit groups, not a fundamentally better detector.
+- All datasets are written by the project author (with AI assistance). No independent blind evaluation has been done. Perfect scores are regression results, not accuracy evidence.
+- Checksum-valid 12-digit numbers right after words such as order, PO, ticket or reference (with no Aadhaar context nearby) are downgraded to `AADHAAR_POSSIBLE` (warn only, not blocked). Presidio variants flag these without a warn/block distinction. A real Aadhaar written right after such a word, with no "aadhaar" within 40 characters, will only warn.
+- UPI detection uses a fixed list of 22 handles; unlisted handles are missed. The Presidio baseline reuses this list, so UPI ties are by construction.
+- The Presidio component runs with `language="en"` and score threshold 0.4. Language-grouped tables do not show multilingual quality.
+- Global detection costs about 7.5 ms per scan versus about 0.07 ms for the native detector.
+- Only the Chrome extension scans entirely in the browser. The web demo and proxy send text to a server.
 
 ## Privacy and limitations
 
