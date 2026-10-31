@@ -16,9 +16,9 @@
 
 ## Recorded local validation
 
-The latest recorded preflight after the proxy detector change reported:
+The latest recorded preflight after the global detector context-filter changes reported:
 
-- 62 Python unit tests passed.
+- 67 Python unit tests passed.
 - Python bytecode compilation passed.
 - Eight blind-gold validator self-tests passed.
 - Extension policy/privacy tests passed.
@@ -64,3 +64,20 @@ User-reported manual tests completed successfully:
 - A synthetic PAN-format value was detected and masked as `[PAN]` on ChatGPT.
 
 Scope note: These are manual browser validation results, not an independent security audit or proof that every identifier, browser version, device or application state has been tested.
+
+## Global detection benchmark ? 31 October 2026
+
+Latest recorded run: generated synthetic test split, 165 prompts including 45 negative prompts.
+
+- Global detector false-alarm rate: 0% (0/45 negative prompts flagged).
+- Global MICRO_ALL: precision 0.92, recall 1.00, F1 0.96.
+- Global MICRO_SHARED: precision 1.00, recall 1.00, F1 1.00.
+- Global latency: p50 7.490 ms; p95 12.693 ms.
+- Native KAVACH false-alarm rate: 0%; MICRO_ALL F1: 1.00.
+- Five focused global-detector regression tests were added; the full suite passed with 67 Python tests.
+
+Limitations:
+- PERSON and LOCATION have no corresponding gold-positive examples in this dataset. Their detection quality is not established.
+- The benchmark is self-authored synthetic evaluation, not an independent blind evaluation or production accuracy claim.
+- Language-grouped report sections do not establish multilingual detection: Presidio is invoked with language="en", and the detector does not receive the row language label.
+- Global detection is slower than the native detector; its additional coverage has a measurable latency cost.

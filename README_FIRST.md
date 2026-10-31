@@ -21,10 +21,27 @@ This folder contains reviewed support material for final validation. The proxy/g
 - `eval.fake` prints synthetic values for seven types only (`AADHAAR`, `PAN`, `PHONE`, `CARD`, `UPI_ID`, `GSTIN`, `EMAIL`). It has no `--help` interface and does not generate `IFSC` or `API_KEY`.
 - `eval/run.py` writes error metadata, entity-type labels and character offsets; its error records do not include raw prompt text or entity values.
 
+## Global detection benchmark ? 31 October 2026
+
+Latest recorded run: generated synthetic test split, 165 prompts including 45 negative prompts.
+
+- Global detector false-alarm rate: 0% (0/45 negative prompts flagged).
+- Global MICRO_ALL: precision 0.92, recall 1.00, F1 0.96.
+- Global MICRO_SHARED: precision 1.00, recall 1.00, F1 1.00.
+- Global latency: p50 7.490 ms; p95 12.693 ms.
+- Native KAVACH false-alarm rate: 0%; MICRO_ALL F1: 1.00.
+- Five focused global-detector regression tests were added; the full suite passed with 67 Python tests.
+
+Limitations:
+- PERSON and LOCATION have no corresponding gold-positive examples in this dataset. Their detection quality is not established.
+- The benchmark is self-authored synthetic evaluation, not an independent blind evaluation or production accuracy claim.
+- Language-grouped report sections do not establish multilingual detection: Presidio is invoked with language="en", and the detector does not receive the row language label.
+- Global detection is slower than the native detector; its additional coverage has a measurable latency cost.
+
 ## Recommended order
 
 1. The chat proxy now uses `analyze_global()`. All six proxy masking tests passed, covering email, global findings, contextual masking, bearer-secret masking, high-risk blocking and Presidio-failure fallback.
-2. The full Windows preflight passed on 31 October 2026: 62 Python tests, eight validator self-tests, extension checks, 1,557/1,557 detector parity and syntax checks.
+2. The full Windows preflight passed on 31 October 2026: 67 Python tests, eight validator self-tests, extension checks, 1,557/1,557 detector parity and syntax checks.
 3. Review the final Git diff and commit only approved source, tests, tools and documentation. Ensure `git status` is clean.
 4. Record the frozen Git commit before any participant writes prompts.
 5. Give the instructions to 3?4 people who have not seen KAVACH code, existing gold prompts, previous results or scanner output. Use only synthetic values.

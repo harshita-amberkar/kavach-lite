@@ -28,7 +28,7 @@ All six proxy tests passed on 31 October 2026. They cover masking, redaction acc
 
 - Completed: the real global-only contextual rule was exercised through the proxy using a mocked upstream; the original synthetic phrase was absent from the forwarded payload.
 - Retain tests for masking, redaction accounting and existing auth/origin/allowlist/request-validation behavior.
-- Completed: full Windows preflight passed on 31 October 2026 with 62 Python tests and all recorded validator, extension, parity and syntax checks.
+- Completed: full Windows preflight passed on 31 October 2026 with 67 Python tests and all recorded validator, extension, parity and syntax checks.
 - Measure detector/proxy latency if making performance claims. Do not infer end-to-end latency from detector-only timings.
 - Keep the proxy bound to a local/mock upstream until authentication, upstream forwarding, blocking, error handling, rate limits and deployment configuration have been independently reviewed.
 

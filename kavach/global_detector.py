@@ -56,6 +56,32 @@ _MIN_SCORE = {
 }
 
 
+# Generic PERSON predictions require explicit name context.
+# Presidio is configured for English; do not treat Devanagari text
+# as reliable English PERSON recognition.
+_PERSON_NAME_CONTEXT = re.compile(
+    r"(?:"
+    r"\b(?:my|his|her|their|customer|employee|patient|applicant|user|contact)"
+    r"\s+name\s*(?:is|:)\s*"
+    r"|\bname\s*:\s*"
+    r"|\bcontact\s*:\s*"
+    r"|\b(?:mr|mrs|ms|miss|dr)\.?\s*"
+    r"|\b(?:email|call|contact|notify|message)\s+"
+    r"(?:mr|mrs|ms|miss|dr)?\.?\s*"
+    r")$",
+    re.IGNORECASE,
+)
+
+
+# Numbers labelled as business/reference identifiers are not phone numbers.
+_PHONE_IDENTIFIER_CONTEXT = re.compile(
+    r"\b(?:order|tracking|consignment|reference|ref|invoice|ticket|"
+    r"shipment|awb|waybill|parcel)\s*"
+    r"(?:id|no\.?|number|#)\s*[:#-]?\s*$",
+    re.IGNORECASE,
+)
+
+
 # Broad geographic names should not automatically be treated as
 # sensitive personal locations.
 _BROAD_LOCATIONS = {
@@ -263,6 +289,23 @@ def _should_keep_location(
     return True
 
 
+def _should_keep_person(value: str, text: str, start: int) -> bool:
+    """Keep PERSON predictions only with clear English name context."""
+    candidate = value.strip()
+
+    if not candidate or not candidate.isascii():
+        return False
+
+    preceding_context = text[max(0, start - 100):start]
+    return bool(_PERSON_NAME_CONTEXT.search(preceding_context))
+
+
+def _has_non_phone_identifier_context(text: str, start: int) -> bool:
+    """Check whether a number follows an order/reference identifier label."""
+    preceding_context = text[max(0, start - 80):start]
+    return bool(_PHONE_IDENTIFIER_CONTEXT.search(preceding_context))
+
+
 def _should_keep_nrp(
     value: str,
     text: str,
@@ -357,6 +400,10 @@ def analyze_global(text: str, mode: str = "label") -> dict:
             finding.end,
             priority_findings,
         )
+        and not (
+            finding.type == "PHONE"
+            and _has_non_phone_identifier_context(text, finding.start)
+        )
     )
 
     global_status = "ok"
@@ -406,6 +453,20 @@ def analyze_global(text: str, mode: str = "label") -> dict:
                 continue
 
             value = text[start:end]
+
+            # Generic PERSON predictions require explicit name context.
+            if (
+                result.entity_type == "PERSON"
+                and not _should_keep_person(value, text, start)
+            ):
+                continue
+
+            # Do not interpret labelled order/reference numbers as phones.
+            if (
+                result.entity_type == "PHONE_NUMBER"
+                and _has_non_phone_identifier_context(text, start)
+            ):
+                continue
 
             # Require personal context for NRP predictions.
             if (

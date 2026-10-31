@@ -72,7 +72,7 @@ The inspected backend generates a process token when `KAVACH_API_TOKEN` is absen
 - The chat proxy uses `analyze_global()` and masks a real `CONFIDENTIAL_BUSINESS` contextual-rule finding before a mocked upstream receives the message.
 - Proxy email masking and mocked global-detector masking tests passed.
 - Existing security tests passed for API-token enforcement, health access, same-origin requests, cross-origin rejection and untrusted-host rejection.
-- The full preflight passed with 62 Python tests, eight validator self-tests, extension policy/privacy checks and 1,557/1,557 Python/JavaScript parity.
+- The full preflight passed with 67 Python tests, eight validator self-tests, extension policy/privacy checks and 1,557/1,557 Python/JavaScript parity.
 
 **Still recommended before any real-provider or non-local deployment:**
 
@@ -91,3 +91,9 @@ The inspected backend has several useful local-development protections and expli
 ## Follow-up inspection — 31 October 2026
 
 The extension options page previously stated that nothing typed is ever sent anywhere by KAVACH. That wording was too absolute. The inspected extension JavaScript uses `chrome.storage.sync` for per-type policy settings and contains no direct `fetch`, `XMLHttpRequest`, `sendBeacon`, or WebSocket calls. The manifest requests the `storage` permission and declares no host permissions. The options-page wording and manifest description have been revised to distinguish local browser prompt scanning, Chrome Sync policy storage, and submission to the destination AI provider. This source inspection is not a runtime network trace and does not characterize the separate FastAPI chat-completions proxy.
+
+### Global detector benchmark evidence ? 31 October 2026
+
+The current generated synthetic test split contains 165 prompts and 45 negatives. After adding PERSON-context and business-identifier phone filters, the recorded global detector false-alarm rate was 0% (0/45), with MICRO_ALL F1 0.96 and MICRO_SHARED F1 1.00. Latency was p50 7.490 ms and p95 12.693 ms.
+
+This is limited synthetic benchmark evidence, not a penetration test, independent evaluation or production-wide accuracy claim. PERSON and LOCATION positive detection remain unvalidated because the gold dataset contains no corresponding positive examples. Presidio is configured for English; language-grouped results do not establish multilingual support.

@@ -3,6 +3,7 @@
 import re
 
 from kavach import scan
+from kavach.global_detector import analyze_global
 from kavach.detectors import _UPI_HANDLES
 
 
@@ -16,6 +17,20 @@ def kavach(text):
         )
         for f in scan(text)
     ]
+
+def kavach_global(text):
+    """Run the complete KAVACH global detection engine."""
+    result = analyze_global(text)
+    return [
+        (
+            "AADHAAR" if finding["type"] == "AADHAAR_POSSIBLE"
+            else finding["type"],
+            finding["start"],
+            finding["end"],
+        )
+        for finding in result.get("findings", [])
+    ]
+
 
 def kavach_block(text):
     """Kavach findings at block level only: AADHAAR_POSSIBLE (warn tier) is dropped."""
@@ -158,7 +173,12 @@ def presidio(custom=False, norm=False):
 
 def available():
     """Return all detector systems that can be loaded."""
-    systems = {"kavach": kavach, "kavach_block": kavach_block, "regex_only": regex_only}
+    systems = {
+        "kavach": kavach,
+        "kavach_global": kavach_global,
+        "kavach_block": kavach_block,
+        "regex_only": regex_only,
+    }
 
     try:
         systems["presidio"] = presidio()
