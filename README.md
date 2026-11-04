@@ -4,6 +4,16 @@ KAVACH Lite is a privacy-focused project that detects and masks potentially sens
 
 KAVACH is a development project, not a guarantee that every sensitive value or data-leakage path will be detected.
 
+The supported Windows launcher binds the backend to `127.0.0.1`; this is a local, single-user development setup, not a hosted service or 24/7 monitoring product. Ollama is restricted to loopback. If `/v1/chat/completions` is configured for a remote provider, KAVACH forwards the **masked** message to that configured upstream, so use of that route is not fully local.
+
+**Supported release operation:** run KAVACH locally on Windows using the
+PowerShell launchers documented below. The included Dockerfile and
+`.dockerignore` are experimental and unsupported; Docker is not a supported
+deployment for this release. Its configuration has not been validated for
+API-token provisioning, persistent SQLite storage, or multi-process rate
+limiting. Do not expose the Docker container to a network or treat it as
+production-ready.
+
 ## Features
 
 - **Sensitive-data detection:** configured recognizers for Aadhaar, PAN, phone numbers
@@ -107,7 +117,7 @@ The extension and backend are separate execution paths. They share detector beha
 
 ## Requirements
 
-- Windows with PowerShell, or Linux/macOS with a shell
+- Windows with PowerShell for the supported launcher scripts
 - Python and packages in `requirements.txt`
 - Node.js for extension tests
 - Google Chrome to manually test the extension
@@ -115,20 +125,50 @@ The extension and backend are separate execution paths. They share detector beha
 
 ## Run locally: Windows PowerShell
 
-Run commands from the project root (the directory containing `app.py`, `kavach/`, `eval/`, and `extension/`).
+Run commands from the project root (the directory containing `app.py`, `kavach/`, `eval/`, and `extension/`). The supported Windows launcher requires the project virtual environment and a root `.env` file. Create the environment and install dependencies:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m uvicorn app:app --reload
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-If the virtual environment already exists, use it instead of recreating it. For this project, the explicit interpreter path also works:
+Create `.env` without printing the generated token. This command refuses to overwrite an existing `.env`; it writes the random token directly to the ignored local file and clears the in-memory token variable afterward:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn app:app --reload
+if (Test-Path .env) { throw ".env already exists; leaving it unchanged." }
+$bytes = New-Object byte[] 48
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $rng.GetBytes($bytes)
+    $token = [Convert]::ToBase64String($bytes)
+    $config = @(
+        "KAVACH_API_TOKEN=$token",
+        "KAVACH_DB_PATH=data/kavach.db",
+        "KAVACH_ALLOWED_HOSTS=127.0.0.1,localhost"
+    )
+    [IO.File]::WriteAllLines((Join-Path (Get-Location) ".env"), $config, [Text.Encoding]::ASCII)
+}
+finally {
+    $rng.Dispose()
+    [Array]::Clear($bytes, 0, $bytes.Length)
+    Remove-Variable token -ErrorAction SilentlyContinue
+}
 ```
+
+`.env.example` contains the required keys with a safe token placeholder. It is a template, not a usable token; replace the placeholder with a locally generated token if you create `.env` by copying the template. Keep `.env` local and never paste the token into a command, screenshot, log, or repository. The launcher reads blank lines and `#` comments and otherwise expects unquoted `UPPERCASE_KEY=value` lines.
+
+The launcher validates that `.venv\Scripts\python.exe` exists, `KAVACH_API_TOKEN` is nonblank and at least 40 characters, `KAVACH_DB_PATH` is nonblank, and `KAVACH_ALLOWED_HOSTS` includes both `127.0.0.1` and `localhost` as comma-separated entries with no spaces around the host names. It initializes the configured SQLite database, refuses to start if the selected port already has a listener, then starts Uvicorn on `127.0.0.1`. The default port is 8000; the optional `-Port` value must be from 1024 through 65535.
+
+Start and stop KAVACH from the project root with the supported PowerShell scripts:
+
+```powershell
+.\tools\start_kavach.ps1
+# Optional alternate port:
+.\tools\start_kavach.ps1 -Port 8001
+.\tools\stop_kavach.ps1
+```
+
+The start script waits for `/api/health`, copies the configured token to the clipboard without printing its value, and opens the dashboard in Chrome or the default browser. The stop script validates the recorded PID, executable path, and Uvicorn command before stopping that process. The `Start KAVACH.bat` and `Stop KAVACH.bat` wrappers invoke these scripts from the project root.
 
 Useful URLs:
 
@@ -136,19 +176,23 @@ Useful URLs:
 - Interactive API docs: `http://127.0.0.1:8000/docs`
 - Registered API schema: `http://127.0.0.1:8000/openapi.json`
 
-The health endpoint in this version is `/api/health` (not `/health`).
+The health endpoint in this version is `/api/health` (not `/health`). It reports local backend readiness, whether the configured SQLite file can be read, and optional Ollama service/model availability. Ollama is probed only when the agent is enabled; an unavailable database or Ollama does not make the scan API readiness endpoint fail. The dashboard refreshes this summary every 30 seconds. This is local process health visibility, not remote or continuous monitoring.
 
-The dashboard and protected API routes use the `X-KAVACH-Token` header.
-For a local demo, configure a token in the same PowerShell process that
-starts Uvicorn:
+The dashboard and protected API routes use the `X-KAVACH-Token` header. Paste the launcher's copied token into the dashboard prompt. Do not commit, share, or include the token in screenshots or logs.
 
-```powershell
-$env:KAVACH_API_TOKEN = [guid]::NewGuid().ToString("N")
-Set-Clipboard $env:KAVACH_API_TOKEN
-```
+`GET /api/health` is intentionally public for local readiness checks; other `/api/*` routes and `/v1/chat/completions` require the token. Health checks do not create or modify the database. The supplied start script checks `/api/health` before opening the dashboard. Stop with `tools\stop_kavach.ps1`; it validates that the PID belongs to the expected project Python/Uvicorn process before stopping it.
 
-Paste the copied token when the dashboard requests it. Do not commit,
-share, or include the token in screenshots or logs.
+### Browser response protection and request limits
+
+Responses include a restrictive Content Security Policy, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer`. The policy allows same-origin scripts/styles and blocks objects and framing (`frame-ancestors 'none'`); dashboard scripts and styles load from the same origin. API and chat-proxy responses use `Cache-Control: no-store`. The built-in interactive FastAPI `/docs` page may not render because its framework UI uses inline/CDN scripts blocked by this policy; `/openapi.json` remains available. No unsafe-inline or unsafe-eval is enabled.
+
+Per-client rolling 60-second limits currently apply to `/api/scan` (30), `/api/scan-file` (10), and `/v1/chat/completions` (20). Set `KAVACH_RATE_LIMIT_SCAN_PER_MINUTE`, `KAVACH_RATE_LIMIT_SCAN_FILE_PER_MINUTE`, and `KAVACH_RATE_LIMIT_CHAT_PER_MINUTE` in `.env` to change those counts; accepted values are 1 through 1000. Invalid values use the defaults. A limited request receives HTTP 429 and `Retry-After: 60`. These limits do not currently cover `/api/scan-global` or `/api/agentic/scan`.
+
+Rate-limit counters are held in process memory and keyed by the connecting client IP. This fits the supported single-process, loopback Windows setup. Counters reset when KAVACH restarts and do not coordinate across multiple server processes or cloud instances; deployments with multiple instances need a shared rate-limit store and edge-level request controls.
+
+### File scan limits
+
+`POST /api/scan-file` accepts only TXT and PDF uploads. The complete multipart request is limited to 5 MiB plus 64 KiB for form framing; the uploaded file itself remains limited to 5 MiB. PDFs are limited to 20 pages and parsed with bounded pypdf stream, decompression, page-tree, and content-processing limits. Password-protected PDFs, oversized files, and over-page-limit PDFs receive fixed explanatory errors; malformed or parser/resource-limit PDFs receive a generic read error, and PDFs with no extractable text receive a no-readable-text response. Scanned-image PDFs are not OCR processed. Temporary upload handles are closed after the request. The application does not log or persist the uploaded file or extracted text.
 
 
 ### Optional autonomous local-agent setup
@@ -160,33 +204,55 @@ ollama pull llama3.2:3b
 ollama list
 ```
 
-Start the KAVACH API with the agent enabled in the same PowerShell process that launches Uvicorn:
+To enable the optional agent with the supported launcher, add these unquoted lines to the local `.env` file:
 
-```powershell
-$env:KAVACH_AGENT_ENABLED = "1"
-$env:KAVACH_AGENT_TIMEOUT = "30"
-.\.venv\Scripts\python.exe -m uvicorn app:app --reload
+```text
+KAVACH_AGENT_ENABLED=1
+KAVACH_AGENT_TIMEOUT=30
 ```
+
+Then restart KAVACH with `tools\start_kavach.ps1` (stop an already running instance first). The agent is disabled unless `KAVACH_AGENT_ENABLED=1`.
 
 Configuration:
 
 - `KAVACH_AGENT_ENABLED`: set to `1` to enable; default is disabled (`0`).
-- `KAVACH_AGENT_TIMEOUT`: request timeout in seconds; default is `8`. A longer timeout may be needed for model startup or slow inference.
+- `KAVACH_AGENT_TIMEOUT`: request timeout in seconds; default is `30`. A longer timeout may be needed for model startup or slow inference.
 - `KAVACH_OLLAMA_URL`: defaults to `http://127.0.0.1:11434/api/generate`.
 - `KAVACH_OLLAMA_MODEL`: defaults to `llama3.2:3b`.
 
-These environment variables apply to the process launched from that terminal. Restart the API after changing them. Keep Ollama local for privacy-sensitive use; changing `KAVACH_OLLAMA_URL` to a remote service changes the data-flow and privacy assumptions.
+These environment variables apply to the process launched from that terminal. Restart the API after changing them. `KAVACH_OLLAMA_URL` accepts only HTTP(S) URLs whose host is `localhost`, `127.0.0.1`, or IPv6 loopback (`[::1]`); remote DNS names, LAN/public IPs, credentials in the URL, and other destinations are rejected. Ollama HTTP requests ignore environment proxy settings and do not follow redirects.
 
-During autonomous planning, Ollama receives a compact workflow summary and eligible-tool list, not the original or masked prompt. The separate advisory review path may send best-effort sanitized context. Sanitization patterns can miss unfamiliar secret formats, so keep the endpoint local and use synthetic data for testing. Model outputs cannot override deterministic detection, masking, verification, or policy decisions.
+During autonomous planning, Ollama receives eligible tool names and a bounded workflow summary containing counts, finding types, risk/status metadata, and reason codes, not the original or masked prompt. The advisory review sends finding types and confidence values with a literal `[REDACTED]` context marker; it does not send source context or detected values. These are implemented request-construction controls, not a claim that KAVACH detects every sensitive value. Model outputs cannot override deterministic detection, masking, verification, or policy decisions.
 
 ### Linux or macOS
+
+The PowerShell launcher is Windows-only. For manual startup, create the same local `.env` settings without printing the token, then export them into the server process:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-python -m uvicorn app:app --reload
+python - <<'PY'
+from pathlib import Path
+import secrets
+
+path = Path(".env")
+if path.exists():
+    raise SystemExit(".env already exists; leaving it unchanged.")
+path.write_text(
+    "KAVACH_API_TOKEN=" + secrets.token_urlsafe(48) + "\n"
+    "KAVACH_DB_PATH=data/kavach.db\n"
+    "KAVACH_ALLOWED_HOSTS=127.0.0.1,localhost\n",
+    encoding="ascii",
+)
+PY
+set -a
+. ./.env
+set +a
+python -m uvicorn app:app --host 127.0.0.1 --reload
 ```
+
+The shell commands explicitly load `.env`; Uvicorn does not load it automatically. Use the configured token in the dashboard's `X-KAVACH-Token` prompt.
 
 ### Load the Chrome extension
 
@@ -195,7 +261,11 @@ python -m uvicorn app:app --reload
 3. Select **Load unpacked** and choose the project's `extension/` directory.
 4. Test using synthetic text only, and review the extension's configured policies before demonstration.
 
-The extension targets ChatGPT, Claude, and Gemini. The developer previously reported 30/30 manual checks across these sites (16 ChatGPT, 7 Claude, 7 Gemini). These are limited manual checks, not comprehensive browser compatibility certification; website interface changes can require compatibility fixes.
+The extension targets ChatGPT, Claude, and Gemini. In the final release review, installation was blocked because Developer mode was administrator-managed. Extension package checks and automated policy/privacy and detector-parity checks passed, but installed-extension Mask/Warn/Block behavior remains unverified in Chrome. Website interface changes can also require compatibility fixes.
+
+### Future deployment readiness
+
+KAVACH is not currently hosted and this release does not provide a production deployment. The Windows launchers support only a single-user loopback development setup. See [Deployment readiness](docs/deployment_readiness.md) for prerequisites and open work before a separately reviewed hosted deployment.
 
 ## API
 
@@ -246,6 +316,12 @@ Example request:
 `POST /api/agentic/scan` runs the bounded agent workflow. The request accepts `text` and a masking `mode` of `label` or `partial`. The model may select only tools currently eligible for the workflow state; Python executes the approved actions. Scanning and masking are deterministic, and the masked output is verified before normal completion. Invalid actions or planner failures can trigger safe fallback and human review. The dashboard presents a simplified Protection Summary instead of exposing internal tool execution details.
 
 `GET /api/agentic/history` returns autonomous workflow audit metadata. The dashboard does not currently expose this as a Recent Activity page. Raw prompts and sensitive values should not be stored in audit records.
+
+### SQLite audit retention and privacy
+
+The workflow audit database stores metadata only: workflow labels and status, finding types and counts, risk metadata, verification state, and bounded step metadata. It does not store source prompts, masked prompts, detected values, passwords, tokens, or free-form AI explanations. Audit rows older than 30 days are removed by default. Set `KAVACH_AUDIT_RETENTION_DAYS` in `.env` to change the period; `0` disables cleanup, and accepted nonzero values range from 1 through 36,500 days. Invalid settings fall back to 30 days.
+
+Cleanup is scheduled asynchronously after an audit write, at most once per hour, so ordinary scans do not run retention queries. It deletes expired rows from `workflow_runs` in a SQLite write transaction and leaves the database and schema in place. If the database is locked or cleanup fails, KAVACH defers/skips that attempt and retries after the throttle interval on a later audit write. SQLite database files are **not encrypted by default**. Protect the configured database and its backups with Windows account and filesystem permissions, especially on shared or backed-up machines.
 
 ### Other routes
 
@@ -299,24 +375,13 @@ The evaluation runner writes `results/report.md`, `results/report.json`, and `re
 
 ## Current verification status
 
-The latest completed project verification run after the dashboard and
-autonomous Partial-masking updates reported:
-
-- Python unit tests: **67 passed** (full preflight, 31 October 2026).
-- Dashboard JavaScript syntax check: **passed**.
-- Python syntax checks for the application and autonomous runtime: **passed**.
-- Extension policy/privacy tests: **passed**.
-- Python/JavaScript detector parity: **1,557 of 1,557 cases identical**.
-- Git whitespace check: **passed**.
-- Autonomous Partial-masking regression test: **passed**.
-- Genuine residual-finding remediation regression test: **passed**.
-
-The live dashboard smoke test reported the expected Autonomous + Partial
-output for the synthetic phone/email prompt. This is a developer-run
-functional check, not a broad accuracy or security certification.
-
-These results describe the tested development version. Repeat the checks
-before a release or demonstration.
+The full project preflight passed on 4 November 2026. It covers Python
+tests/compilation, extension policy/privacy and detector parity, dashboard
+and extension JavaScript syntax, manifest JSON, and `git diff --check`. Run
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+.\tools\run_preflight.ps1` from the project root for fresh results. Passing
+these checks is not an accuracy guarantee, security certification, or
+substitute for browser testing.
 
 ## Locked v1 evaluation
 
@@ -400,7 +465,7 @@ The global detector first flagged 14/45 negatives (31.1%), caused by Presidio PE
 ## What the evidence does and does not show
 
 - Presidio, given a one-line Devanagari-to-ASCII digit step ("Presidio normalized"), nearly matches KAVACH on these datasets (Micro F1 0.90 vs 1.00 on the 51-prompt set). KAVACH's advantage is that it normalises by default and avoids matching inside longer digit groups, not a fundamentally better detector.
-- All datasets are written by the project author (with AI assistance). No independent blind evaluation has been done. Perfect scores are regression results, not accuracy evidence.
+- The existing gold and regression datasets are project-authored. A separate project-authored synthetic holdout is documented in `docs/independent_synthetic_holdout.md`; it is not human-created or statistically representative. Perfect scores on smaller datasets are regression results, not general accuracy evidence.
 - Checksum-valid 12-digit numbers right after words such as order, PO, ticket or reference (with no Aadhaar context nearby) are downgraded to `AADHAAR_POSSIBLE` (warn only, not blocked). Presidio variants flag these without a warn/block distinction. A real Aadhaar written right after such a word, with no "aadhaar" within 40 characters, will only warn.
 - UPI detection uses a fixed list of 22 handles; unlisted handles are missed. The Presidio baseline reuses this list, so UPI ties are by construction.
 - The Presidio component runs with `language="en"` and score threshold 0.4. Language-grouped tables do not show multilingual quality.
@@ -412,12 +477,20 @@ The global detector first flagged 14/45 negatives (31.1%), caused by Presidio PE
 - Use synthetic data or appropriately consented and anonymized samples. Do not place real personal identifiers, customer records, or credentials in test fixtures or public reports.
 - The detector is rule-based and can miss unsupported formats, names, addresses, obfuscated data, and other sensitive information.
 - Aadhaar checksum and context rules reduce certain false positives; they do not prove that a detected number belongs to a real person.
-- Agent context sanitization is best-effort. Patterns may fail to redact an unfamiliar secret format. Do not claim complete leakage prevention.
+- The optional agent receives workflow metadata, finding types/confidence, and a redacted context marker; it is not sent source or masked prompt text. This does not guarantee that the deterministic detector finds every sensitive value before other application routes process it.
 - The local LLM is advisory only. The deterministic detector and configured policy remain authoritative.
 - The extension and backend have separate integration paths and need independent testing.
 - The chat proxy needs additional security, authentication, upstream, and deployment review before real-data use.
+- The in-memory rate limits are process-local and currently omit `/api/scan-global` and `/api/agentic/scan`; they are not distributed controls.
+- SQLite is not encrypted by default. Cloud hosting, multi-instance rate limiting, at-rest database encryption, OCR, continuous monitoring, and a production security certification are not implemented features.
 - Synthetic gold-set scores are not a substitute for evaluation on representative, consented, anonymized data.
 - KAVACH is not a substitute for an organization's security controls, privacy review, or compliance program.
+
+### Implemented controls and future work
+
+Implemented in the current local application: loopback startup, token-protected API routes (with public `/api/health` readiness), same-origin write checks, response security headers, selected per-client rate limits, bounded TXT/PDF parsing, loopback-only Ollama requests, metadata-only SQLite audit records with configurable retention, and a browser extension with per-type policies. These controls reduce specific risks; they do not establish complete detection or security.
+
+Future work, if the project scope expands, includes shared rate limiting for `/api/scan-global` and `/api/agentic/scan`, encrypted storage design, broader detector validation and language coverage, and a separately reviewed deployment model. OCR and additional file formats are not supported. There is no cloud service, 24/7 monitoring, production certification, or guarantee of detection accuracy.
 
 ## Demo checklist
 

@@ -7,6 +7,9 @@ import math
 import os
 import re
 import secrets
+import threading
+import time
+from collections import deque
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -17,13 +20,20 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
-from pypdf import PdfReader
+from pypdf import Configuration, PdfReader
+from pypdf._configuration import CURRENT_CONFIGURATION
 
 from kavach import analyze
 from kavach.global_detector import analyze_global
-from kavach.agent import AGENT_ENABLED, review_findings
+from kavach.agent import (
+    AGENT_ENABLED,
+    OLLAMA_MODEL,
+    OLLAMA_URL,
+    review_findings,
+    validate_ollama_url,
+)
 from kavach.agentic import run_agentic_workflow
-from kavach.audit import list_recent_runs
+from kavach.audit import database_status, list_recent_runs
 
 # --------------------------------------------------
 # Configuration
@@ -64,6 +74,7 @@ ALLOWED_HOSTS = [
 STATIC = Path(__file__).parent / "static"
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+MAX_SCAN_REQUEST_BODY_BYTES = MAX_UPLOAD_BYTES + 64 * 1024
 MAX_PDF_PAGES = 20
 
 MAX_CHAT_BODY_BYTES = 1 * 1024 * 1024
@@ -72,6 +83,36 @@ MAX_CHAT_TEXT_CHARS = 20000
 
 MAX_UPSTREAM_RESPONSE_BYTES = 5 * 1024 * 1024
 UPSTREAM_TIMEOUT = 60
+
+
+def _rate_limit_from_env(name: str, default: int) -> int:
+    raw_value = os.getenv(name, "").strip()
+    if not raw_value:
+        return default
+    try:
+        configured_value = int(raw_value)
+        if 1 <= configured_value <= 1000:
+            return configured_value
+    except ValueError:
+        pass
+    logger.warning("Ignoring invalid %s configuration; using the default.", name)
+    return default
+
+
+RATE_LIMIT_WINDOW_SECONDS = 60
+RATE_LIMITS = {
+    "/api/scan": _rate_limit_from_env("KAVACH_RATE_LIMIT_SCAN_PER_MINUTE", 30),
+    "/api/scan-file": _rate_limit_from_env("KAVACH_RATE_LIMIT_SCAN_FILE_PER_MINUTE", 10),
+    "/v1/chat/completions": _rate_limit_from_env("KAVACH_RATE_LIMIT_CHAT_PER_MINUTE", 20),
+}
+RATE_LIMIT_LOCK = threading.Lock()
+
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; script-src 'self'; style-src 'self'; "
+    "img-src 'self' data:; font-src 'self' data:; connect-src 'self'; "
+    "object-src 'none'; base-uri 'self'; form-action 'self'; "
+    "frame-src 'none'; frame-ancestors 'none'"
+)
 
 # --------------------------------------------------
 # FastAPI application
@@ -88,6 +129,7 @@ app = FastAPI(
 _configured_api_token = os.getenv("KAVACH_API_TOKEN", "").strip()
 API_TOKEN = _configured_api_token or secrets.token_urlsafe(32)
 app.state.api_token = API_TOKEN
+app.state.rate_limit_events = {}
 
 app.add_middleware(
     TrustedHostMiddleware,
@@ -130,6 +172,42 @@ def _origin_matches_request(origin: str, request: Request) -> bool:
         return False
 
 
+def _secure_response_headers(response, request: Request):
+    response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    if request.url.path.startswith("/api/") or request.url.path == "/v1/chat/completions":
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+    return response
+
+
+def _rate_limit_allowed(request: Request, now: float | None = None) -> bool:
+    limit = RATE_LIMITS.get(request.url.path)
+    if limit is None:
+        return True
+
+    client_host = request.client.host if request.client else "unknown"
+    bucket_key = (request.url.path, client_host)
+    if now is None:
+        now = time.monotonic()
+    with RATE_LIMIT_LOCK:
+        events = request.app.state.rate_limit_events
+        cutoff = now - RATE_LIMIT_WINDOW_SECONDS
+        for key, timestamps in list(events.items()):
+            while timestamps and timestamps[0] <= cutoff:
+                timestamps.popleft()
+            if not timestamps:
+                del events[key]
+        timestamps = events.setdefault(bucket_key, deque())
+        while timestamps and timestamps[0] <= cutoff:
+            timestamps.popleft()
+        if len(timestamps) >= limit:
+            return False
+        timestamps.append(now)
+        return True
+
+
 @app.middleware("http")
 async def enforce_same_origin_for_writes(request: Request, call_next):
     """Reject cross-origin writes and authenticate protected API routes."""
@@ -140,10 +218,10 @@ async def enforce_same_origin_for_writes(request: Request, call_next):
         # Requests without Origin remain supported for local CLI/API clients.
         # Protected routes still require the KAVACH token below.
         if origin and not _origin_matches_request(origin, request):
-            return JSONResponse(
+            return _secure_response_headers(JSONResponse(
                 status_code=403,
                 content={"detail": "Cross-origin requests are not allowed."},
-            )
+            ), request)
 
     # Keep health checks public.
     # Protect other /api routes and the chat proxy.
@@ -160,12 +238,43 @@ async def enforce_same_origin_for_writes(request: Request, call_next):
         expected_token = request.app.state.api_token
 
         if not secrets.compare_digest(supplied_token, expected_token):
-            return JSONResponse(
+            return _secure_response_headers(JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid or missing KAVACH API token."},
-            )
+            ), request)
 
-    return await call_next(request)
+    if request.method == "POST" and not _rate_limit_allowed(request):
+        response = JSONResponse(
+            status_code=429,
+            content={"detail": "Request limit reached. Please wait before trying again."},
+            headers={"Retry-After": str(RATE_LIMIT_WINDOW_SECONDS)},
+        )
+        return _secure_response_headers(response, request)
+
+    if request.method == "POST" and request.url.path == "/api/scan-file":
+        content_length = request.headers.get("content-length")
+        if content_length is not None:
+            try:
+                declared_length = int(content_length)
+            except ValueError:
+                return _secure_response_headers(JSONResponse(status_code=400, content={"detail": "Invalid Content-Length header."}), request)
+            if declared_length < 0:
+                return _secure_response_headers(JSONResponse(status_code=400, content={"detail": "Invalid Content-Length header."}), request)
+            if declared_length > MAX_SCAN_REQUEST_BODY_BYTES:
+                return _secure_response_headers(JSONResponse(status_code=413, content={"detail": "Upload request is too large."}), request)
+
+        # Bound the raw multipart body before Starlette parses/spools the upload.
+        chunks = []
+        received = 0
+        async for chunk in request.stream():
+            received += len(chunk)
+            if received > MAX_SCAN_REQUEST_BODY_BYTES:
+                return _secure_response_headers(JSONResponse(status_code=413, content={"detail": "Upload request is too large."}), request)
+            chunks.append(chunk)
+        request._body = b"".join(chunks)
+
+    response = await call_next(request)
+    return _secure_response_headers(response, request)
 
 
 # --------------------------------------------------
@@ -311,7 +420,37 @@ def home():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "1.2.4"}
+    ollama = {"status": "disabled", "model_available": None}
+    if AGENT_ENABLED:
+        try:
+            configured_url = urlsplit(validate_ollama_url(OLLAMA_URL))
+            tags_url = f"{configured_url.scheme}://{configured_url.netloc}/api/tags"
+            response = httpx.get(
+                tags_url,
+                timeout=0.5,
+                trust_env=False,
+                follow_redirects=False,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            models = payload.get("models", []) if isinstance(payload, dict) else []
+            available_models = {
+                item.get("name") for item in models
+                if isinstance(item, dict) and isinstance(item.get("name"), str)
+            } if isinstance(models, list) else set()
+            ollama = {
+                "status": "available",
+                "model_available": OLLAMA_MODEL in available_models,
+            }
+        except Exception:
+            ollama = {"status": "unavailable", "model_available": False}
+
+    return {
+        "status": "ok",
+        "version": "1.2.4",
+        "database": database_status(),
+        "ollama": ollama,
+    }
 
 
 # --------------------------------------------------
@@ -413,26 +552,53 @@ async def scan_file(file: UploadFile = File(...)):
                 )
 
             try:
-                reader = PdfReader(BytesIO(content), strict=False)
-
-                if reader.is_encrypted:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Password-protected PDFs are not supported.",
-                    )
-
-                page_count = len(reader.pages)
-
-                if page_count > MAX_PDF_PAGES:
-                    raise HTTPException(
-                        status_code=413,
-                        detail="PDFs are limited to 20 pages.",
-                    )
-
-                text = "\n".join(
-                    page.extract_text() or ""
-                    for page in reader.pages
+                # These pypdf limits are scoped to this synchronous parse/extraction
+                # so concurrent requests do not change one another's settings.
+                pdf_configuration = Configuration(
+                    maximum_declared_stream_length=MAX_UPLOAD_BYTES,
+                    array_based_stream_maximum_output_length=20 * 1024 * 1024,
+                    array_maximum_element_count=20_000,
+                    dictionary_maximum_element_count=20_000,
+                    jbig2_maximum_output_length=20 * 1024 * 1024,
+                    lzw_maximum_output_length=20 * 1024 * 1024,
+                    run_length_maximum_output_length=20 * 1024 * 1024,
+                    zlib_maximum_output_length=20 * 1024 * 1024,
+                    brotli_maximum_output_length=20 * 1024 * 1024,
+                    stream_filters_maximum_length=8,
+                    stream_decoding_work_maximum_length=40 * 1024 * 1024,
+                    stream_parsing_work_maximum_count=500_000,
+                    page_tree_maximum_entries=1_000,
+                    page_tree_maximum_depth=40,
+                    xform_maximum_invocations_per_extraction=1_000,
                 )
+                config_token = CURRENT_CONFIGURATION.set(pdf_configuration)
+                try:
+                    reader = PdfReader(
+                        BytesIO(content),
+                        strict=False,
+                        root_object_recovery_limit=1_000,
+                    )
+
+                    if reader.is_encrypted:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Password-protected PDFs are not supported.",
+                        )
+
+                    page_count = len(reader.pages)
+
+                    if page_count > MAX_PDF_PAGES:
+                        raise HTTPException(
+                            status_code=413,
+                            detail="PDFs are limited to 20 pages.",
+                        )
+
+                    text = "\n".join(
+                        page.extract_text() or ""
+                        for page in reader.pages
+                    )
+                finally:
+                    CURRENT_CONFIGURATION.reset(config_token)
 
             except HTTPException:
                 raise

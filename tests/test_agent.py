@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 from unittest.mock import patch
 
@@ -21,6 +22,63 @@ class AgentTests(unittest.TestCase):
             "end": 24,
             "confidence": 0.97,
         }]
+
+    def test_ollama_url_accepts_only_loopback_destinations(self):
+        for url in (
+            "http://localhost:11434/api/generate",
+            "http://127.0.0.1:11434/api/generate",
+            "http://[::1]:11434/api/generate",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(agent.validate_ollama_url(url), url)
+
+        for url in (
+            "https://ollama.example/api/generate",
+            "http://192.168.1.25:11434/api/generate",
+            "not a valid URL",
+            "http://localhost:invalid/api/generate",
+        ):
+            with self.subTest(url=url):
+                with self.assertRaises(ValueError):
+                    agent.validate_ollama_url(url)
+
+    @patch("kavach.agent.httpx.post")
+    def test_ollama_request_ignores_environment_proxies(self, mock_post):
+        mock_post.return_value.json.return_value = {
+            "response": json.dumps({
+                "reviews": [{
+                    "id": 0,
+                    "assessment": "likely",
+                    "reason": "Email context",
+                }]
+            })
+        }
+        mock_post.return_value.raise_for_status.return_value = None
+
+        with patch.dict(os.environ, {
+            "HTTP_PROXY": "http://proxy.invalid:8080",
+            "HTTPS_PROXY": "http://proxy.invalid:8080",
+            "ALL_PROXY": "http://proxy.invalid:8080",
+        }), patch.object(agent, "AGENT_ENABLED", True):
+            agent.review_findings(self.text, self.findings)
+
+        self.assertIs(mock_post.call_args.kwargs["trust_env"], False)
+        self.assertIs(
+            mock_post.call_args.kwargs["follow_redirects"], False
+        )
+
+    @patch("kavach.agent.httpx.post")
+    def test_remote_ollama_url_is_rejected_before_request(self, mock_post):
+        remote_url = "http://192.168.1.25:11434/api/generate"
+        with patch.object(agent, "OLLAMA_URL", remote_url), patch.object(
+            agent,
+            "AGENT_ENABLED",
+            True,
+        ):
+            result = agent.review_findings(self.text, self.findings)
+
+        self.assertEqual(result["status"], "unavailable")
+        mock_post.assert_not_called()
 
     @patch("kavach.agent.httpx.post")
     def test_sensitive_value_is_not_sent_to_model(self, mock_post):
@@ -46,7 +104,10 @@ class AgentTests(unittest.TestCase):
         prompt = mock_post.call_args.kwargs["json"]["prompt"]
 
         self.assertNotIn("demo@example.com", prompt)
+        self.assertNotIn("Contact", prompt)
         self.assertIn("[REDACTED]", prompt)
+        candidates = json.loads(prompt.split("Candidates:\n", 1)[1])
+        self.assertEqual(candidates[0]["context"], "[REDACTED]")
 
     @patch("kavach.agent.httpx.post")
     def test_invalid_model_json_fails_safely(self, mock_post):
@@ -119,6 +180,19 @@ class AgentTests(unittest.TestCase):
             {"status": "disabled", "reviews": []},
         )
         mock_post.assert_not_called()
+
+    @patch("kavach.agent.httpx.post")
+    def test_timeout_is_reported_without_exposing_exception_text(self, mock_post):
+        mock_post.side_effect = httpx.ReadTimeout(
+            "PRIVATE_EMAIL_SENTINEL"
+        )
+
+        with patch.object(agent, "AGENT_ENABLED", True):
+            result = agent.review_findings(self.text, self.findings)
+
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(result["reason"], "timeout")
+        self.assertNotIn("PRIVATE_EMAIL_SENTINEL", repr(result))
 
     def test_sanitizer_redacts_neighboring_sensitive_values(self):
         text = (

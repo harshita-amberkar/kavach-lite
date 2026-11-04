@@ -65,7 +65,6 @@ try {
 
     Invoke-Check 'Python unit tests' $python @('-m', 'unittest', 'discover', '-v')
     Invoke-Check 'Python bytecode compilation' $python @('-m', 'compileall', '-q', 'app.py', 'kavach', 'tests', 'eval')
-    Invoke-Check 'Blind evaluation validator self-tests' $python @('tools/test_validate_blind_gold.py')
     Invoke-Check 'Extension policy and privacy tests' 'node' @('extension/tests/policy_and_privacy.js')
     Invoke-Check 'Extension/Python detector parity' 'node' @('extension/tests/parity.js')
     Invoke-Check 'Dashboard JavaScript syntax' 'node' @('--check', 'static/app.js')

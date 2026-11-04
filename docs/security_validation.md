@@ -7,6 +7,12 @@ development. These results describe the tested implementation and
 synthetic fixtures; they are not a certification or proof of security
 against every possible attack.
 
+> **Historical run record:** the 42-test count below describes an earlier
+> development run, not the current checkout. Current release checks are run
+> with `tools/run_preflight.ps1`; use its latest output for current results.
+> The current controls and remaining limits are summarized at the end of
+> this document.
+
 ## Automated verification
 
 The recorded verification run reported:
@@ -61,8 +67,9 @@ These live tests used synthetic input.
   risk information, agent status, verification status, and filtered
   workflow steps rather than original prompt text.
 - Agent review context is sanitized before it is sent to the configured
-  Ollama endpoint. Pattern-based sanitization is not a guarantee that
-  every possible sensitive value will be detected.
+  Ollama endpoint. The current request builders send finding types,
+  confidence and bounded workflow metadata, with a literal `[REDACTED]`
+  marker; original and masked prompt text and detected values are withheld.
 - The chat proxy constructs an upstream payload using masked messages.
 - The KAVACH API token is no longer written to application startup logs.
 - The optional agent is advisory; deterministic scanning and masking
@@ -76,7 +83,8 @@ These live tests used synthetic input.
   judgment has not been independently validated here.
 - Automated tests and smoke tests cover selected paths, not every
   deployment configuration or attack.
-- Pattern-based redaction may miss previously unseen sensitive formats.
+- The detector can miss unsupported or previously unseen formats; the agent
+  does not receive source text to apply any additional source-value redaction.
 - A successful verification rescan only establishes that the configured
   scanner found no remaining supported findings in that output.
 - The configured local model endpoint and local host security remain
@@ -89,3 +97,33 @@ screenshots, source files, commits, and shared logs. Bind the development
 server to loopback unless a separately reviewed deployment design is
 used. Describe all benchmark results with their dataset sizes and
 limitations.
+
+## Current implementation status — 4 November 2026
+
+The earlier verification notes above are historical evidence. The current
+implementation also has loopback-only Ollama URL validation with HTTP
+environment-proxy inheritance and redirects disabled; a 5 MiB file limit,
+a 5 MiB plus 64 KiB total multipart limit, a 20-page PDF cap and pypdf
+resource limits; generic upload/parser errors; response CSP and standard
+security headers; selected per-client API rate limits; and asynchronous,
+transactional audit retention (30 days by default, `0` disables it).
+SQLite remains unencrypted by default. Rate limits remain in-process and
+do not apply to `/api/scan-global` or `/api/agentic/scan`. The extension
+does not run the backend's Presidio recognizers; its parity number covers
+only native detector fixtures, with separate regression coverage for
+selected deterministic global rules.
+
+The supported release setup is local Windows operation through the
+PowerShell launchers, which bind to loopback. Docker is experimental and
+unsupported; its token provisioning, persistent SQLite storage, and
+multi-process rate limiting have not been validated. Do not expose the
+Docker configuration to a network or use it as a production deployment.
+The optional chat proxy can
+send masked content to its configured upstream. Cloud hosting, distributed
+rate limiting, continuous monitoring, OCR, production certification, and
+guaranteed detection accuracy are not implemented. The full project
+preflight passed on 4 November 2026, including Python tests and compilation,
+extension policy/privacy checks, 1,557/1,557 native detector parity,
+JavaScript syntax, manifest validation, and `git diff --check`. These
+results describe this local checkout; passing preflight is not a security
+certification.

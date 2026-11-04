@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7faf9">
+  <meta name="theme-color" content="#080e1e">
   <meta name="description" content="KAVACH local privacy workspace for scanning and masking sensitive information before using AI tools.">
   <title>KAVACH — Privacy Workspace</title>
   <link rel="stylesheet" href="/static/style.css">
@@ -11,6 +11,20 @@
 </head>
 <body>
   <div class="app-shell">
+    <svg class="environment-network" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs><linearGradient id="ambientEnergy" x1="0" x2="1"><stop stop-color="#5fe6ef" stop-opacity="0"/><stop offset=".48" stop-color="#9dcaff" stop-opacity=".85"/><stop offset="1" stop-color="#bc8aff" stop-opacity="0"/></linearGradient></defs>
+      <path d="M42 210h146l78 78h150l82-82h168l70 70h166M1310 117h-138l-82 82h-150l-86 86h-124M0 704h190l86-86h150l70 70h174l90-90h152M1600 732h-180l-80-80h-146l-75 75h-150"/>
+      <path d="M321 0v126l84 84v122l-72 72v146M1276 0v178l-70 70v148l95 95v130M730 1000V842l77-77V620l-95-95V390M1010 1000V858l-80-80V650l72-72V452"/>
+      <path class="ambient-streak streak-one" d="M35 210h381l82-82h168"/><path class="ambient-streak streak-two" d="M1565 732h-325l-75 75h-150"/>
+      <circle cx="42" cy="210" r="4"/><circle cx="416" cy="288" r="4"/><circle cx="736" cy="284" r="4"/><circle cx="902" cy="354" r="4"/>
+      <circle cx="1310" cy="117" r="4"/><circle cx="1008" cy="199" r="4"/><circle cx="630" cy="285" r="4"/>
+      <circle cx="0" cy="704" r="4"/><circle cx="426" cy="618" r="4"/><circle cx="670" cy="688" r="4"/><circle cx="1112" cy="657" r="4"/><circle cx="1420" cy="732" r="4"/>
+      <circle cx="321" cy="126" r="4"/><circle cx="1276" cy="178" r="4"/><circle cx="730" cy="620" r="4"/><circle cx="1010" cy="650" r="4"/>
+      <circle class="field-particle particle-small" cx="178" cy="428" r="1.7"/><circle class="field-particle particle-large" cx="530" cy="482" r="3"/>
+      <circle class="field-particle particle-medium" cx="850" cy="142" r="2.3"/><circle class="field-particle particle-small" cx="1114" cy="432" r="1.7"/>
+      <circle class="field-particle particle-large" cx="1450" cy="380" r="2.8"/><circle class="field-particle particle-medium" cx="260" cy="830" r="2.1"/>
+      <circle class="field-particle particle-small" cx="910" cy="852" r="1.6"/><circle class="field-particle particle-medium" cx="1360" cy="912" r="2.2"/>
+    </svg>
     <aside class="sidebar" aria-label="Main navigation">
       <a class="brand" href="#scan" aria-label="KAVACH Protect">
         <span class="brand-mark" aria-hidden="true">
@@ -30,98 +44,162 @@
 
         <a class="nav-link" href="#security">
           <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3 20 6v5.5c0 4.6-3.1 7.8-8 9.8-4.9-2-8-5.2-8-9.8V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 0 0-1.8.2l-.2.1h-3.4l-.1-.2a1.7 1.7 0 0 0-1.5-1l-.2 0-2.9-1.7.1-.2a1.7 1.7 0 0 0-.2-1.8l-.1-.2v-3.4l.2-.1a1.7 1.7 0 0 0 1-1.5v-.2l1.7-2.9.2.1a1.7 1.7 0 0 0 1.8-.2l.2-.1h3.4l.1.2a1.7 1.7 0 0 0 1.5 1l.2 0 2.9 1.7-.1.2a1.7 1.7 0 0 0 .2 1.8l.1.2v3.4z"/></svg>
           </span>
           <span>Settings</span>
         </a>
+        <a class="nav-link" href="#help">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.8c-1.1 1-1.9 1.4-1.9 2.7M12 17h.01"/></svg>
+          </span>
+          <span>Help &amp; Extensions</span>
+        </a>
       </nav>
-
-      <div class="sidebar-bottom">
-        <div class="local-card"><span class="local-indicator" aria-hidden="true"></span><div><strong>Running locally</strong><p>Bound to this machine</p></div></div>
-        <div class="sidebar-version"><span>KAVACH</span><span>v1.2.4</span></div>
-      </div>
     </aside>
 
     <main class="main-content" id="overview">
       <header class="topbar">
-        <div class="breadcrumbs"><span>Workspace</span><span class="crumb-slash">/</span><strong>Protect</strong></div>
-        <div class="topbar-actions"><span class="environment-badge"><span class="environment-dot" aria-hidden="true"></span> LOCAL WORKSPACE</span><span class="avatar" aria-label="KAVACH workspace">K</span></div>
+        <div class="breadcrumbs"><span>KAVACH</span><span class="crumb-slash">/</span><strong>Protect</strong></div>
       </header>
 
       <div class="page-content">
-        <section class="page-heading">
-          <div><p class="eyebrow">PRIVACY CONTROL CENTER</p><h1>Protect your prompt<br class="mobile-break"> before you share it.</h1><p class="page-subtitle">Check text for sensitive information, review the protected version, and copy it before using an AI tool.</p></div>
-          <a class="button button-primary heading-action" href="#scan"><span aria-hidden="true">+</span> Protect a prompt</a>
-        </section>
-
-        <section class="trust-strip" aria-label="KAVACH capabilities">
-          <div class="trust-item"><span class="trust-icon trust-teal" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5.5c0 4.6-3.1 7.8-8 9.8-4.9-2-8-5.2-8-9.8V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.7-5"/></svg></span><span><strong>Multi-layer detection</strong><small>Rules, checksums &amp; Presidio</small></span></div>
-          <div class="trust-item"><span class="trust-icon trust-purple" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8 14.2 9.8 21.2 12l-7 2.2-2.2 7-2.2-7L2.8 12l7-2.2L12 2.8Z"/></svg></span><span><strong>Optional local AI review</strong><small>Advisory, not in control</small></span></div>
-          <div class="trust-item"><span class="trust-icon trust-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4M8 12h8M8 16h8"/></svg></span><span><strong>Personalized settings</strong><small>Choose your protection defaults</small></span></div>
+        <section class="page-heading hero-section">
+          <div class="hero-copy">
+            <p class="eyebrow">KAVACH PROTECT</p>
+            <h1>Check your text<br class="mobile-break"> before you share it.</h1>
+            <p class="page-subtitle">Paste text or choose a TXT or PDF. KAVACH looks for supported sensitive information and prepares a protected copy for you to review.</p>
+            <div class="hero-actions">
+              <div id="backend-health" class="backend-health" data-state="checking" role="status" aria-live="polite">
+                <span class="backend-health-dot" aria-hidden="true"></span>
+                <span id="backend-health-label">Checking that everything is ready…</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-visual" id="hero-visual" aria-hidden="true">
+            <div class="hero-orbit hero-orbit-outer"></div>
+            <div class="hero-orbit hero-orbit-inner"></div>
+            <div class="hero-spark hero-spark-one"></div>
+            <div class="hero-spark hero-spark-two"></div>
+            <div class="hero-shield-glow"></div>
+            <span class="hero-shield-core"></span>
+            <svg class="hero-shield" viewBox="0 0 180 200" fill="none">
+              <defs><linearGradient id="shieldGradient" x1="28" y1="18" x2="150" y2="170" gradientUnits="userSpaceOnUse"><stop stop-color="#3585ee"/><stop offset="1" stop-color="#08a9c7"/></linearGradient><linearGradient id="shieldEnergy" x1="25" y1="24" x2="155" y2="160" gradientUnits="userSpaceOnUse"><stop stop-color="#b5ffff"/><stop offset=".45" stop-color="#60ddf7"/><stop offset="1" stop-color="#c39aff"/></linearGradient></defs>
+              <path class="hero-shield-outline" d="M90 10 155 34v53c0 43-27 75-65 101C52 162 25 130 25 87V34L90 10Z"/>
+              <path class="hero-shield-energy" d="M90 10 155 34v53c0 43-27 75-65 101C52 162 25 130 25 87V34L90 10Z"/>
+              <path class="hero-shield-reflection" d="m90 15 59 22v48"/>
+              <path class="hero-shield-inner" d="M90 29 139 47v39c0 33-19 58-49 79-30-21-49-46-49-79V47l49-18Z"/>
+              <path class="hero-shield-check" d="m66 96 16 16 34-37"/>
+            </svg>
+            <span class="hero-shield-caption">LOCAL PROTECTION</span>
+          </div>
         </section>
 
         <section class="section-block" id="scan">
-          <div class="section-heading"><div><p class="eyebrow">01 / PROTECT</p><h2>Protect a prompt</h2><p>Paste text, choose a protection mode, then select Check &amp; Protect.</p></div><span class="section-chip"><span class="chip-dot" aria-hidden="true"></span> Ready to protect</span></div>
+          <div class="section-heading"><div><p class="eyebrow">YOUR TEXT</p><h2>What would you like to check?</h2><p>Paste text or choose a document. Your original stays here while you review the protected copy.</p></div></div>
 
           <div class="scanner-grid">
             <article class="panel prompt-panel">
-              <div class="panel-heading"><div><span class="step-index">01</span><h3>Prompt input</h3></div><span class="micro-label">20,000 CHAR MAX</span></div>
-              <label for="inp" class="field-label">Text to inspect</label>
-              <textarea id="inp" class="prompt-input" maxlength="20000" placeholder="Paste your prompt here. Use synthetic or anonymized data while testing." spellcheck="false"></textarea>
+              <div class="panel-heading"><div><span class="step-index">01</span><h3>Paste your text</h3></div><span class="micro-label">UP TO 20,000 CHARACTERS</span></div>
+              <label for="inp" class="field-label">Text to check</label>
+              <textarea id="inp" class="prompt-input" maxlength="20000" placeholder="Paste the text you want to share. Your protected copy will appear separately for review." spellcheck="false"></textarea>
 
               <fieldset class="protection-mode">
-                <legend class="field-label">Choose protection mode</legend>
+                <legend class="field-label">Choose a check</legend>
                 <label class="mode-option">
                   <input type="radio" name="protection-mode" value="standard" checked>
-                  <span><strong>Standard</strong><small>Run the detection and masking checks.</small></span>
+                  <span class="mode-icon mode-icon-standard" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M8 10.5h5M10.5 8v5"/></svg></span>
+                  <span><strong>Everyday check</strong><small>Finds supported sensitive information and masks it in your protected copy.</small></span>
                 </label>
                 <label class="mode-option">
                   <input type="radio" name="protection-mode" value="autonomous">
-                  <span><strong>Autonomous</strong><small>Run a multi-step workflow with optional local AI review.</small></span>
+                  <span class="mode-icon mode-icon-autonomous" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8 20 6v5.5c0 4.6-3.1 7.8-8 9.8-4.9-2-8-5.2-8-9.8V6l8-3.2Z"/><path d="m8.5 12 2.2 2.2 4.7-5"/></svg></span>
+                  <span><strong>Extra checks</strong><small>Checks the protected copy again. A local AI assistant may also offer advice.</small></span>
                 </label>
               </fieldset>
+              <p class="mode-safety-note">Review the protected copy before sharing. KAVACH may not find every sensitive item.</p>
 
               <div class="example-block"><span class="micro-label">TRY A SAMPLE</span><div class="example-row"><button type="button" class="example-chip" data-s="0">Contact details</button><button type="button" class="example-chip" data-s="1">Indian identifiers</button><button type="button" class="example-chip" data-s="2">Developer secrets</button></div></div>
               <div class="panel-actions">
                 <p class="helper-copy"><span class="helper-lock" aria-hidden="true">i</span> Use synthetic or consented, anonymized data.</p>
                 <div class="prompt-action-buttons">
                   <button type="button" id="protect-button" class="button button-primary">Check &amp; Protect</button>
-                  <button type="button" id="clear" class="button button-quiet">Clear</button>
+                  <button type="button" id="clear" class="button button-quiet">Clear text</button>
                 </div>
               </div>
-              <p id="protection-status" class="status-line" aria-live="polite">Your prompt has not been scanned yet.</p>
+              <p id="protection-status" class="status-line" aria-live="polite">Your text is ready to check.</p>
             </article>
 
             <article class="panel result-panel">
-              <div class="panel-heading"><div><span class="step-index step-index-result">02</span><h3>Protection preview</h3></div><span class="live-label"><span class="live-dot" aria-hidden="true"></span> RESULT</span></div>
-              <div class="risk-banner"><div class="risk-mark" aria-hidden="true">✓</div><div class="risk-copy"><span class="micro-label">SCAN STATUS</span><strong id="level" class="level none">Not scanned yet</strong><span id="score" class="risk-detail">Choose a mode and select Check &amp; Protect.</span></div></div>
-              <div class="masked-output-wrap"><div class="output-heading"><label class="field-label" for="out">Protected prompt</label><button type="button" id="copy-protected" class="button button-quiet button-small" disabled>Copy protected prompt</button></div><div id="out" class="out empty" aria-live="polite">Your protected prompt will appear here after scanning.</div><p id="copy-feedback" class="copy-feedback" aria-live="polite"></p>
-                <p class="protection-review-note">Review the detected items and protected prompt before sending it to an AI tool. KAVACH cannot guarantee that every sensitive value will be detected.</p></div>
-              <details class="findings-details"><summary>View detected items</summary><div class="findings-heading"><h4>Detected findings</h4><span class="micro-label">TYPE · POSITION · CONFIDENCE</span></div>
-              <div class="table-wrap"><table class="findings-table"><thead><tr><th scope="col">Type</th><th scope="col">Position</th><th scope="col">Confidence</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty-cell">No scan results yet.</td></tr></tbody></table></div></details>
+              <div class="panel-heading"><div><span class="step-index step-index-result">02</span><h3>Your protected copy</h3></div><span class="live-label"><span class="live-dot" aria-hidden="true"></span> RESULT</span></div>
 
               <section id="protection-summary" class="protection-summary" hidden aria-live="polite">
                 <div class="protection-summary-top">
                   <div>
-                    <span class="micro-label">PROTECTION SUMMARY</span>
-                    <h4 id="protection-summary-title">Protection preview ready</h4>
-                    <p id="protection-summary-message">Review the protected prompt before sharing.</p>
+                    <h4 id="protection-summary-title">Your check is complete</h4>
+                    <p id="protection-summary-message">Review the protected text before sharing.</p>
                   </div>
                   <span id="protection-summary-status" class="protection-summary-badge neutral">Not scanned</span>
                 </div>
                 <div class="protection-summary-count">
-                  <span>Detected items</span>
+                  <span>Sensitive items found</span>
                   <strong id="protection-summary-count">0</strong>
                 </div>
+                <div id="agent-review-status" class="agent-review-status" hidden>
+                  <div>
+                    <strong>Optional local assistant</strong>
+                    <p id="agent-review-message">An advisory review was completed.</p>
+                    <small>AI advice does not control or replace KAVACH's checks.</small>
+                  </div>
+                  <span id="agent-review-badge" class="agent-review-badge">Unavailable</span>
+                </div>
               </section>
+              <div class="masked-output-wrap">              <div class="output-heading"><label class="field-label" for="out">Protected text</label><span class="masked-state-tag"><span aria-hidden="true">✓</span> PROTECTED COPY</span><button type="button" id="copy-protected" class="button button-quiet button-small" disabled>Copy protected text</button></div><div id="out" class="out empty" aria-live="polite">Your protected copy will appear here after checking.</div><p id="copy-feedback" class="copy-feedback" aria-live="polite"></p>
+                <p class="protection-review-note">Review the protected text before sharing. KAVACH may not find every sensitive item.</p></div>
+              <details class="findings-details"><summary>View what was found</summary><div class="findings-heading"><h4>Sensitive information found</h4></div>
+              <div id="rows" class="findings-list"><div class="finding-empty">No scan results yet.</div></div></details>
             </article>
           </div>
 
-          <article class="panel document-panel">
-            <div class="document-heading"><div class="document-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4M9 13h6M9 16h6"/></svg></div><div><h3>Scan a document</h3><p>Extract readable text from a TXT or text-based PDF and download a masked copy.</p></div></div>
-            <form id="file-form" class="upload-row"><label class="upload-drop" for="file-input"><span class="upload-icon" aria-hidden="true">＋</span><span><strong>Choose a document</strong><small>TXT or PDF · Maximum 5 MB</small></span></label><input id="file-input" name="file" type="file" accept=".txt,.pdf,text/plain,application/pdf"><button type="submit" id="scan-file-button" class="button button-primary">Scan document <span aria-hidden="true">→</span></button></form>
-            <p id="file-status" class="status-line" aria-live="polite">No document selected.</p>
-            <div id="file-results" class="document-results" hidden><div class="document-stats"><div><span class="micro-label">FILE</span><strong id="file-name">—</strong></div><div><span class="micro-label">PAGES</span><strong id="file-pages">—</strong></div><div><span class="micro-label">FINDINGS</span><strong id="file-count">—</strong></div><div><span class="micro-label">RISK</span><strong id="file-risk">—</strong></div></div><h4>Findings</h4><div id="file-findings" class="file-findings"></div><div class="output-heading"><span class="field-label">Masked document text</span><button type="button" id="download-masked" class="button button-quiet button-small">Download masked TXT ↓</button></div><pre id="file-masked" class="masked-document"></pre></div>
+          <article class="panel document-panel" id="document-scanner" aria-busy="false">
+            <div class="document-heading">
+              <div class="document-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4M9 13h6M9 16h6"/></svg></div>
+              <div><p class="eyebrow">DOCUMENT PROTECTION</p><h3>Protect a document</h3><p>Choose a TXT or PDF file, then review and download its protected copy.</p></div>
+            </div>
+            <form id="file-form" class="upload-row">
+              <label class="upload-drop" id="upload-drop" for="file-input">
+                <input id="file-input" class="upload-input" name="file" type="file" accept=".txt,.pdf,text/plain,application/pdf" aria-describedby="file-guidance">
+                <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg></span>
+                <span class="upload-copy"><strong>Drop a document here</strong><small>or <span class="upload-browse">browse files</span></small></span>
+              </label>
+              <div class="upload-guidance" id="file-guidance">
+                <strong>Supported files</strong>
+                <span>TXT or text-based PDF · Up to 5 MB</span>
+                <span>PDFs are limited to 20 pages. Scanned-image PDFs are not supported.</span>
+              </div>
+              <button type="submit" id="scan-file-button" class="button button-primary scan-file-button"><span class="scan-button-spinner" aria-hidden="true"></span><span id="scan-button-text">Protect document</span><span class="button-arrow" aria-hidden="true">→</span></button>
+              <div id="file-selection" class="file-selection" hidden>
+                <span class="file-selection-icon" aria-hidden="true">TXT</span>
+                <span class="file-selection-copy"><strong id="selected-file-name">—</strong><small id="selected-file-size"></small></span>
+                <button type="button" id="clear-file" class="clear-file-button" aria-label="Remove selected document">×</button>
+              </div>
+            </form>
+            <div id="file-progress" class="file-progress" hidden role="progressbar" aria-label="Document scan in progress" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+            <p id="file-status" class="status-line file-status" role="status" aria-live="polite" aria-atomic="true">Choose a TXT or PDF file to check.</p>
+            <div id="file-results" class="document-results" hidden>
+              <div class="results-section-heading"><div><p class="eyebrow">PROTECTED DOCUMENT</p><h4>Your protected copy is ready</h4><p id="file-count" class="document-item-count">Sensitive items found: 0</p></div><span class="result-ready-badge">Ready to review</span></div>
+              <section class="file-findings-section" aria-labelledby="file-findings-title">
+                <div class="findings-title-row"><div><p class="eyebrow">WHAT WE FOUND</p><h4 id="file-findings-title">Sensitive information found</h4></div></div>
+                <div id="file-findings" class="file-findings"></div>
+              </section>
+              <section class="protected-document-section" aria-labelledby="protected-document-title">
+                <div class="protected-document-heading">
+                  <div><p class="eyebrow">YOUR PROTECTED COPY</p><h4 id="protected-document-title">Protected text</h4><p>Review this protected text before sharing it.</p></div>
+                  <button type="button" id="download-masked" class="button button-primary download-button">Download protected TXT <span aria-hidden="true">↓</span></button>
+                </div>
+                <pre id="file-masked" class="masked-document" aria-label="Protected document text"></pre>
+                <p id="download-feedback" class="download-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+              </section>
+            </div>
           </article>
         </section>
 
@@ -130,88 +208,97 @@
             <div>
               <p class="eyebrow">03 / SETTINGS</p>
               <h2>Settings</h2>
-              <p>Choose how KAVACH protects prompts by default. Your preferences are saved in this browser.</p>
+              <p>Choose how detected information appears in protected text. This preference stays in this browser.</p>
             </div>
           </div>
 
           <div class="security-grid settings-grid">
             <article class="panel security-card settings-preferences">
-              <span class="security-icon" aria-hidden="true">⚙</span>
-              <h3>Protection preferences</h3>
-              <p>These defaults are used when you open the Protect workspace. You can still choose another protection mode for an individual prompt.</p>
+              <h3>Masking preference</h3>
+              <p>Choose how KAVACH hides matches in pasted text. This setting is saved only in this browser. Documents always use labels.</p>
 
               <form id="settings-form" class="settings-form">
-                <div class="settings-field">
-                  <label for="settings-default-mode">Default protection mode</label>
-                  <select id="settings-default-mode" name="protectionMode">
-                    <option value="standard">Standard</option>
-                    <option value="autonomous">Autonomous</option>
-                  </select>
-                  <small>Standard runs the global detection and masking checks. Autonomous runs the bounded multi-step privacy workflow.</small>
-                </div>
-
-                <div class="settings-field">
-                  <label for="settings-masking-format">Default masking format</label>
+<div class="settings-field">
+                  <label for="settings-masking-format">Masking format</label>
                   <select id="settings-masking-format" name="maskingMode">
-                    <option value="label">Label — replace detected values with [TYPE]</option>
-                    <option value="partial">Partial — keep the last four digits for Aadhaar, card and phone</option>
+                    <option value="label">Hide each match with a label, such as [EMAIL]</option>
+                    <option value="partial">Show only the last four digits for some numbers</option>
                   </select>
-                  <small>Partial masking keeps the last four digits for Aadhaar, card and phone findings. Other detected types continue to use labels.</small>
+                  <small>Partial masking leaves the last four digits visible for Aadhaar, cards and phone numbers. Other matches are fully replaced with labels.</small>
                 </div>
 
                 <div class="settings-actions">
                   <button type="submit" class="button button-primary">Save preferences</button>
-                  <button type="button" id="reset-settings" class="button button-quiet">Reset defaults</button>
+                  <button type="button" id="reset-settings" class="button button-quiet">Reset preferences</button>
                 </div>
                 <p id="settings-status" class="status-line" role="status" aria-live="polite">Loading saved preferences...</p>
               </form>
             </article>
-
-            <article class="panel security-card">
-              <span class="security-icon" aria-hidden="true">◇</span>
-              <h3>Chrome extension policies</h3>
-              <p>Choose what happens for each detected data type: Allow, Warn, Mask automatically, or Block.</p>
-              <ol class="settings-steps">
-                <li>Open <code>chrome://extensions</code> in Chrome.</li>
-                <li>Find KAVACH and select <strong>Details</strong>.</li>
-                <li>Open <strong>Extension options</strong> and save your policies.</li>
-              </ol>
-              <p class="settings-help">These policies are stored by the extension and are separate from the dashboard preferences above.</p>
-            </article>
-
-            <article class="panel security-card">
-              <span class="security-icon" aria-hidden="true">✳</span>
-              <h3>Local AI review</h3>
-              <p>The optional local AI reviewer provides advisory assessments. It does not control the detector or masking decisions.</p>
-              <p class="settings-help">Availability is controlled by the KAVACH server configuration, including <code>KAVACH_AGENT_ENABLED</code> and the local Ollama service. This dashboard cannot switch the server setting independently.</p>
-            </article>
-
-            <article class="panel security-card">
-              <span class="security-icon" aria-hidden="true">⌂</span>
-              <h3>Local server and access</h3>
-              <p>For development, bind KAVACH to <code>127.0.0.1</code> and do not expose it to a public network.</p>
-              <p class="settings-help">The dashboard uses an API access token. Do not share it, hardcode it, or commit it to Git.</p>
-            </article>
           </div>
         </section>
 
-        <footer class="page-footer"><div class="footer-brand"><span class="footer-mark" aria-hidden="true">K</span><span><strong>KAVACH</strong><small>Privacy before the prompt.</small></span></div><p>Local privacy workspace · v1.2.4</p><p class="footer-disclaimer">Detection is heuristic and cannot guarantee every sensitive value will be found.</p></footer>
+        <section class="section-block help-section" id="help">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">HELP &amp; EXTENSIONS</p>
+                <h2>Get started with KAVACH</h2>
+                <p>Simple steps for protecting text and using KAVACH in Chrome.</p>
+              </div>
+            </div>
+
+            <div class="help-grid">
+              <article class="panel help-card how-to-card">
+                <span class="help-card-icon" aria-hidden="true">01</span>
+                <p class="eyebrow">HOW KAVACH WORKS</p>
+                <h3>Check and protect in four steps</h3>
+                <ol class="help-steps">
+                  <li><span>1</span><div><strong>Add what you want to protect</strong><small>Paste text, or choose a TXT or PDF document.</small></div></li>
+                  <li><span>2</span><div><strong>Choose a mode for pasted text</strong><small>Standard scans and masks. Autonomous adds extra checks of the protected copy.</small></div></li>
+                  <li><span>3</span><div><strong>Select Check &amp; Protect</strong><small>For a document, select Protect document.</small></div></li>
+                  <li><span>4</span><div><strong>Review your protected copy</strong><small>Then copy or download it before sharing.</small></div></li>
+                </ol>
+                <a class="button button-primary help-action" href="#scan">Go to Protect</a>
+              </article>
+
+              <article class="panel help-card extension-card">
+                <span class="help-card-icon extension-help-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4h3a2 2 0 1 1 0 4H3v4a2 2 0 0 0 2 2h4v-3a2 2 0 1 1 4 0v3h4a2 2 0 0 0 2-2v-4h-3a2 2 0 1 1 0-4h3V5a2 2 0 0 0-2-2h-4v3a2 2 0 1 1-4 0V3Z"/></svg>
+                </span>
+                <p class="eyebrow">KAVACH FOR CHROME</p>
+                <h3>Protect prompts as you type</h3>
+                <p class="help-card-copy">The extension checks prompts in ChatGPT, Claude and Gemini before you send them. Choose whether supported matches should be allowed, warned about, masked or blocked.</p>
+                <a class="button button-primary help-action" href="/static/downloads/kavach-chrome-extension.zip" download="kavach-chrome-extension.zip">Download extension (ZIP)</a>
+                <div class="extension-install">
+                  <h4>Install the extension</h4>
+                  <ol class="help-install-steps">
+                    <li>Download and unzip the file.</li>
+                    <li>In Chrome, open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>.</li>
+                    <li>Select <strong>Load unpacked</strong>, then choose the unzipped KAVACH folder containing <code>manifest.json</code>.</li>
+                    <li>To change extension preferences, open KAVACH's <strong>Details</strong> page and select <strong>Extension options</strong>.</li>
+                  </ol>
+                </div>
+                <p class="extension-separation-note">Extension preferences are separate from dashboard settings. Changing one does not change the other. Possible Aadhaar matches always show a warning.</p>
+              </article>
+            </div>
+        </section>
+
+        <footer class="page-footer"><div class="footer-brand"><span class="footer-mark" aria-hidden="true">K</span><span><strong>KAVACH</strong><small>Review before you share.</small></span></div><p class="footer-disclaimer">KAVACH may not find every sensitive item. Review your protected text before sharing.</p></footer>
       </div>
     </main>
   </div>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const navLinks = Array.from(document.querySelectorAll(".nav-link[href^='#']"));
-      const sections = navLinks.map(link => document.querySelector(link.getAttribute("href"))).filter(Boolean);
-      if (!("IntersectionObserver" in window)) return;
-      const observer = new IntersectionObserver(entries => {
-        const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${visible.target.id}`));
-      }, { rootMargin: "-18% 0px -65% 0px", threshold: [0, 0.15, 0.35] });
-      sections.forEach(section => observer.observe(section));
-    });
-  </script>
+  <dialog id="token-dialog" class="token-dialog" aria-labelledby="token-dialog-title" aria-describedby="token-dialog-description">
+    <form id="token-form" class="token-form">
+      <h2 id="token-dialog-title">Connect to KAVACH</h2>
+      <p id="token-dialog-description">KAVACH needs this code to protect your text. Enter the code provided with your setup. It stays only in this browser tab.</p>
+      <label for="token-input">Access code</label>
+      <input id="token-input" name="token" type="password" autocomplete="off" required>
+      <div class="token-dialog-actions">
+        <button type="button" id="token-cancel" class="button button-quiet">Cancel</button>
+        <button type="submit" class="button button-primary">Connect</button>
+      </div>
+    </form>
+  </dialog>
+
 </body>
 </html>

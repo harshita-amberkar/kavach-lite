@@ -2,6 +2,16 @@
 
 **Status snapshot:** 31 October 2026. Test counts below are from the user's recorded local Windows preflight output; they are not a claim that tests ran in this document-authoring session.
 
+**Supported release operation:** local Windows use through the PowerShell
+launchers. Docker files are experimental and unsupported for this release;
+token provisioning, persistent SQLite storage, and multi-process rate
+limiting have not been validated. Do not expose the Docker configuration to
+a network or treat it as production-ready.
+
+## Security implementation update — 4 November 2026
+
+Since this historical status snapshot, the current source includes local-only Ollama validation/proxy controls, source-text exclusion from Ollama requests, bounded TXT/PDF uploads, pypdf resource limits, security headers/CSP, selected in-memory per-client API rate limits, and transactional 30-day audit retention. See the current README and `docs/security_validation.md` for exact behavior. SQLite remains unencrypted by default; rate limits remain single-process; the extension does not run backend Presidio. These controls do not amount to a production security review or guarantee detection accuracy.
+
 ## Implemented
 
 - Python deterministic detection, masking and risk scoring.
@@ -33,8 +43,8 @@ These results apply to that checkout and test run. Rerun the preflight after sub
 
 1. **Proxy end-to-end regression: COMPLETED.** All six proxy tests passed: email masking, mocked global finding, real contextual finding, bearer-secret masking, high-risk blocking before forwarding, and contextual fallback when Presidio is unavailable.
 2. **Documentation and privacy wording: UPDATED.** README, demo runbook, extension options page and manifest now distinguish local browser scanning, Chrome Sync policy storage, the destination AI provider and the separate FastAPI proxy.
-3. **Security validation:** independently review authentication, origin enforcement, upstream allowlisting, request limits, blocking/error handling, logging, extension behavior and deployment exposure. Do not call the proxy production-ready solely because mocked tests pass.
-4. **Independent synthetic holdout:** collect 30–40 human-authored prompts from 3–4 people who have not seen the code, existing gold prompts or results. Use only synthetic values, freeze the commit, hash the dataset and run once. Do not tune against it.
+3. **Deployment/security work remains future work:** selected authentication, origin, request, header, rate-limit, privacy and upload controls are implemented and regression-tested locally. A separately designed and reviewed non-loopback/multi-instance deployment, shared rate limiting, encrypted storage, and real-provider validation are not implemented. Do not call the proxy production-ready solely because mocked tests pass.
+4. **Independent synthetic holdout: COMPLETED.** A separate, project-authored synthetic set was frozen by SHA-256 and evaluated without tuning. This is not a human evaluation; the abandoned participant-collection workflow was not used. See `docs/independent_synthetic_holdout.md` and `results/independent_synthetic_holdout/`.
 5. **Manual browser testing:** verify the extension on the supported AI sites and record any site-UI compatibility issues.
 6. **Submission materials:** review the final report, presentation placeholders, screenshots and demo runbook; rehearse the complete demo.
 
@@ -51,7 +61,7 @@ These results apply to that checkout and test run. Rerun the preflight after sub
 - Focused proxy tests and full preflight pass on the frozen checkout.
 - README, demo runbook, privacy wording and status documents match the code.
 - Reviewed files are committed and `git status` is clean before independent data collection.
-- Independent holdout is collected, hashed and run once without tuning.
+- The separate synthetic holdout is generated reproducibly, hash-checked and evaluated without tuning. Human-authored participant collection is not part of this milestone.
 - Final report and presentation clearly state scope, limits, test evidence and what remains unverified.
 
 

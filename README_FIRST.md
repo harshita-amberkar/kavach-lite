@@ -1,55 +1,87 @@
-# KAVACH Lite — Remaining validation work pack
+# KAVACH Lite - Project Validation Guide
 
-> **Status:** the independent blind holdout (steps 4-7 below) was NOT carried out; the project has a single developer. All reported results are self-authored.
+> Status: Independent, solo-developed software project. Benchmark results include a project-authored synthetic holdout, not a human-created or statistically representative evaluation.
 
-This folder contains reviewed support material for final validation. The proxy/global-detector decision has already been implemented in the current checkout; see `docs/proxy_detector_scope_plan.md` for the current state and remaining regression coverage.
+## Current security behavior
 
-## Included
+The supported release runs locally on Windows through the PowerShell launchers. The included Docker files are experimental and unsupported; token provisioning, persistent SQLite storage, and multi-process rate limiting have not been validated. Do not expose the Docker setup to a network or treat it as production-ready. The Windows launcher binds the API to `127.0.0.1`; `GET /api/health` and the dashboard report local backend, SQLite accessibility, and optional Ollama/model state. This is local health visibility, not cloud hosting or 24/7 monitoring. Use `tools\stop_kavach.ps1` for identity-checked shutdown. The optional Ollama client is restricted to loopback, disables environment-proxy use and redirects, and sends workflow/finding metadata rather than original or masked prompts or detected source values. The separate chat proxy can forward masked messages to its configured upstream.
 
-- `blind_eval/participant_instructions.md` — protocol for 3–4 independent writers to create a synthetic holdout.
-- `blind_eval/collector_checklist.md` — merge, freeze and one-run checklist.
-- `tools/validate_blind_gold.py` — format/annotation validator; does not run KAVACH or print prompt contents.
-- `tools/test_validate_blind_gold.py` — eight validator self-tests; these are not KAVACH detector tests.
+## Windows quick start
+
+1. Install Python and, if you plan to run the extension checks, Node.js. Ollama is optional.
+2. In PowerShell at the project root, create the virtual environment and install dependencies:
+
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+   ```
+
+3. Follow the [full Windows setup](README.md#run-locally-windows-powershell) to create a private `.env` with a local API token. Do not use the example token placeholder as a credential.
+4. Start KAVACH with `.\tools\start_kavach.ps1`, check `http://127.0.0.1:8000/api/health`, and stop it with `.\tools\stop_kavach.ps1`.
+
+The PowerShell launchers are the supported release path. Docker remains experimental and unsupported; see the README for its limitations.
+
+File scanning accepts TXT/PDF only, with a 5 MiB file cap, 5 MiB + 64 KiB multipart request cap, 20-page PDF cap and bounded pypdf parsing. API responses include CSP/security headers; selected routes have per-client, in-memory rate limits. Audit storage is metadata-only with 30-day retention by default (`KAVACH_AUDIT_RETENTION_DAYS=0` disables cleanup); SQLite is not encrypted by default. See [README.md](README.md) and [security validation](docs/security_validation.md) for details and limitations.
+
+The Chrome extension does not run backend Presidio detection. Its 1,557-case parity result covers native Python/JavaScript detection only; selected deterministic global rules have separate regression tests. Detection accuracy is not guaranteed.
+
+Chrome extension installation was blocked on the review machine because Developer mode is administrator-managed. The extension package checks and automated policy/privacy and detector-parity checks passed, but installed-extension Mask/Warn/Block behavior remains unverified in Chrome. Do not describe those installed behaviors as release-validated.
+
+## Project components
+
+- `app.py` — FastAPI application and API endpoints.
+- `kavach/` — Core detection and masking engine.
+- `extension/` — Chrome extension for local prompt protection.
+- `static/` — Dashboard interface.
+- `eval/` — Synthetic benchmark generation and evaluation.
+- `tests/` — Python regression and security tests.
+- `docs/` — Technical documentation and implementation records.
+
+## Validation tools
+
 - `tools/run_preflight.ps1` — Windows preflight for Python, JavaScript, extension and syntax checks.
-- `tools/run_blind_eval.ps1` — validates and hashes an external holdout, runs it once, archives results beside the external gold file, and restores existing `results/report.*` files.
-- `docs/security_review_2026-10-30.md` — source-snapshot security review; verify each item against the current checkout before treating it as complete.
-- `docs/proxy_detector_scope_plan.md` — implementation record for the chat-proxy global-detector change.
+- `eval/gen.py` — Generates the synthetic benchmark dataset.
+- `eval/run.py` — Evaluates datasets and writes benchmark reports.
 
-## Current findings
+## Implementation notes
 
-- `/v1/chat/completions` now calls `analyze_global()` before forwarding masked message content. `/api/scan` intentionally remains on `analyze()`.
-- Presidio in the global detector is invoked with `language="en"`; language-grouped evaluation tables do not prove multilingual detection because the detector callback receives text without the row language.
-- The extension scans prompt text locally in the browser. Its per-type policy uses `chrome.storage.sync`. The inspected extension source has no direct fetch/XHR/beacon/WebSocket request, but the extension privacy statement must not claim that all settings are exclusively local or that the destination AI service never receives a submitted prompt.
-- `eval.fake` prints synthetic values for seven types only (`AADHAAR`, `PAN`, `PHONE`, `CARD`, `UPI_ID`, `GSTIN`, `EMAIL`). It has no `--help` interface and does not generate `IFSC` or `API_KEY`.
-- `eval/run.py` writes error metadata, entity-type labels and character offsets; its error records do not include raw prompt text or entity values.
+- `/v1/chat/completions` uses `analyze_global()` before forwarding masked message content.
+- `/api/scan` uses the native `analyze()` detection engine.
+- Presidio global detection currently uses English (`language="en"`). Language-grouped evaluation tables do not establish multilingual detection.
+- The Chrome extension performs prompt detection locally and stores policy settings using `chrome.storage.sync`.
+- When a user submits a prompt, the destination AI service receives the submitted content. KAVACH must not claim otherwise.
+- `eval/gen.py` generates synthetic benchmark examples for AADHAAR, PAN, PHONE, CARD, UPI_ID, GSTIN and EMAIL.
+- `eval/run.py` records error metadata, entity types and character offsets, not raw prompt text or entity values.
 
-## Global detection benchmark ? 31 October 2026
+## Recorded global detection benchmark — 31 October 2026
 
-Latest recorded run: generated synthetic test split, 165 prompts including 45 negative prompts.
+Dataset: 165 synthetic prompts, including 45 negative prompts.
 
-- Global detector false-alarm rate: 0% (0/45 negative prompts flagged).
+- Global false-alarm rate: 0% (0/45).
 - Global MICRO_ALL: precision 0.92, recall 1.00, F1 0.96.
 - Global MICRO_SHARED: precision 1.00, recall 1.00, F1 1.00.
 - Global latency: p50 7.490 ms; p95 12.693 ms.
 - Native KAVACH false-alarm rate: 0%; MICRO_ALL F1: 1.00.
-- Five focused global-detector regression tests were added; the full suite passed with 67 Python tests.
 
-Limitations:
-- PERSON and LOCATION have no corresponding gold-positive examples in this dataset. Their detection quality is not established.
-- The benchmark is self-authored synthetic evaluation, not an independent blind evaluation or production accuracy claim.
-- Language-grouped report sections do not establish multilingual detection: Presidio is invoked with language="en", and the detector does not receive the row language label.
-- Global detection is slower than the native detector; its additional coverage has a measurable latency cost.
+### Benchmark limitations
 
-## Recommended order
+- PERSON and LOCATION have no corresponding gold-positive examples in this dataset.
+- Results are self-authored synthetic evaluations, not independent or production accuracy claims.
+- Presidio is invoked with English language configuration; multilingual detection has not been established.
+- Global detection has additional latency compared with the native detector.
 
-1. The chat proxy now uses `analyze_global()`. All six proxy masking tests passed, covering email, global findings, contextual masking, bearer-secret masking, high-risk blocking and Presidio-failure fallback.
-2. The full Windows preflight passed on 31 October 2026: 67 Python tests, eight validator self-tests, extension checks, 1,557/1,557 detector parity and syntax checks.
-3. Review the final Git diff and commit only approved source, tests, tools and documentation. Ensure `git status` is clean.
-4. Record the frozen Git commit before any participant writes prompts.
-5. Give the instructions to 3?4 people who have not seen KAVACH code, existing gold prompts, previous results or scanner output. Use only synthetic values.
-6. Collect, merge and validate the holdout outside the Git repository.
-7. Run `tools\run_blind_eval.ps1` once. Preserve the hash and archive; do not tune against this dataset.
+## Recommended validation procedure
 
-## Output handling
+1. Run `python -m unittest discover -v`.
+2. Run `tools\run_preflight.ps1` from the project root.
+3. Check extension detector parity and policy tests.
+4. Review `git diff --check` and `git status --short`.
+5. Use synthetic or consented and anonymised data only.
+6. Record benchmark limitations alongside reported results.
 
-The blind-runner's `errors.jsonl` contains metadata and offsets, not raw prompt contents or entity values. The external gold file contains the prompt text and annotations. Keep that file and its archive private even though the values are synthetic. The runner refuses a dirty Git tree, refuses a gold file inside the repository, records the commit and SHA-256, and refuses to run when its one-time lock folder already exists.
+## Data handling
+
+- Do not commit `.env`, API credentials, databases or runtime logs.
+- Do not put real personal information into synthetic benchmark datasets.
+- Keep audit records and local evaluation outputs protected.
+- Do not describe self-authored benchmarks as independent blind evaluations.

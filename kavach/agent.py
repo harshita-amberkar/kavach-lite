@@ -6,8 +6,10 @@ Only sanitized context and finding metadata are sent to Ollama.
 """
 
 import json
+import ipaddress
 import os
 import re
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -17,58 +19,55 @@ OLLAMA_URL = os.getenv(
     "http://127.0.0.1:11434/api/generate",
 )
 OLLAMA_MODEL = os.getenv("KAVACH_OLLAMA_MODEL", "llama3.2:3b")
-AGENT_TIMEOUT = float(os.getenv("KAVACH_AGENT_TIMEOUT", "8"))
+AGENT_TIMEOUT = float(os.getenv("KAVACH_AGENT_TIMEOUT", "30"))
 
 # Disabled unless explicitly enabled.
 AGENT_ENABLED = os.getenv("KAVACH_AGENT_ENABLED", "0") == "1"
 
 
-def _sanitize_context(text: str, start: int, end: int) -> str:
-    """Redact likely identifiers in the full text before extracting context."""
-    marker = "__KAVACH_TARGET_MARKER_9F31__"
-    while marker in text:
-        marker += "_X"
+def validate_ollama_url(url: str) -> str:
+    """Accept only HTTP(S) URLs addressed directly to a loopback host."""
+    try:
+        if not isinstance(url, str) or any(
+            char.isspace() or ord(char) < 32 or ord(char) == 127
+            for char in url
+        ):
+            raise ValueError
 
-    # Mark the detected value without exposing it.
-    safe_text = text[:start] + marker + text[end:]
+        parsed = urlsplit(url)
+        hostname = parsed.hostname
+        port = parsed.port
 
-    # Redact likely sensitive values across the FULL text first.
-    # This prevents identifiers from escaping detection at snippet boundaries.
-    patterns = [
-        # Email addresses
-        r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+        if (
+            parsed.scheme.lower() not in {"http", "https"}
+            or not hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+            or "\\" in url
+            or (port is not None and port == 0)
+        ):
+            raise ValueError
 
-        # Common API keys and access tokens
-        r"\b(?:AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{36,})\b",
-        r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b",
-        r"\bBearer\s+\S+",
+        hostname = hostname.lower()
+        if hostname != "localhost":
+            # Reject DNS names, scoped IPv6 literals, and every non-loopback
+            # address. Only parsed IP literals are accepted here.
+            if "%" in hostname or not ipaddress.ip_address(hostname).is_loopback:
+                raise ValueError
 
-        # Credentials explicitly labelled in text
-        r"\b(?:api[_-]?key|secret|token|passwd|password|authorization)\b\s*[:=]\s*\S+",
+    except (ValueError, UnicodeError):
+        raise ValueError(
+            "KAVACH_OLLAMA_URL must use localhost or a loopback IP address."
+        ) from None
 
-        # Long number sequences, PAN, GSTIN, IFSC and IBAN-like values
-        r"\b\d[\d\s-]{7,}\d\b",
-        r"\b[A-Z]{5}\d{4}[A-Z]\b",
-        r"\b(?:0[1-9]|[12]\d|3[0-8])[A-Z]{3}[ABCFGHLJPT][A-Z]\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b",
-        r"\b[A-Z]{4}0[A-Z0-9]{6}\b",
-        r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b",
+    return url
 
-        # Email-like and UPI-like identifiers
-        r"\b[\w.-]{2,64}@[a-z][a-z0-9.-]{1,30}\b",
-    ]
 
-    for pattern in patterns:
-        safe_text = re.sub(pattern, "[REDACTED]", safe_text, flags=re.I)
-
-    # Only extract a short context after the full text has been sanitized.
-    marker_index = safe_text.find(marker)
-    if marker_index < 0:
-        return "[REDACTED]"
-
-    left = max(0, marker_index - 60)
-    right = min(len(safe_text), marker_index + len(marker) + 60)
-
-    return safe_text[left:right].replace(marker, "[REDACTED]")
+def _sanitize_context(_text: str, _start: int, _end: int) -> str:
+    """Withhold source text; regex redaction cannot guarantee privacy."""
+    return "[REDACTED]"
 
 
 def review_findings(text: str, findings: list[dict]) -> dict:
@@ -93,9 +92,13 @@ def review_findings(text: str, findings: list[dict]) -> dict:
         ):
             continue
 
+        finding_type = str(finding.get("type", "UNKNOWN"))
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,39}", finding_type):
+            finding_type = "UNKNOWN"
+
         candidates.append({
             "id": index,
-            "type": str(finding.get("type", "UNKNOWN"))[:40],
+            "type": finding_type,
             "confidence": round(
                 max(0.0, min(1.0, float(finding.get("confidence", 0.0)))),
                 2,
@@ -108,9 +111,9 @@ def review_findings(text: str, findings: list[dict]) -> dict:
 
     prompt = (
         "You are an advisory reviewer for a privacy detector. "
-        "Review each candidate using only its type, confidence, and "
-        "redacted context. Context may still contain unrecognized data. "
-        "Do not infer or reconstruct redacted values. "
+        "Review each candidate using only its type and confidence. "
+        "Source context is withheld and represented by [REDACTED]. "
+        "Do not infer or reconstruct source values. "
         "Return JSON only in this format: "
         '{"reviews":[{"id":0,"assessment":"likely|uncertain|unlikely",'
         '"reason":"brief reason"}]}. '
@@ -120,8 +123,9 @@ def review_findings(text: str, findings: list[dict]) -> dict:
     )
 
     try:
+        ollama_url = validate_ollama_url(OLLAMA_URL)
         response = httpx.post(
-            OLLAMA_URL,
+            ollama_url,
             json={
                 "model": OLLAMA_MODEL,
                 "prompt": prompt,
@@ -130,6 +134,8 @@ def review_findings(text: str, findings: list[dict]) -> dict:
                 "options": {"temperature": 0},
             },
             timeout=AGENT_TIMEOUT,
+            trust_env=False,
+            follow_redirects=False,
         )
         response.raise_for_status()
         response_data = response.json()
@@ -169,6 +175,12 @@ def review_findings(text: str, findings: list[dict]) -> dict:
 
         return {"status": "ok", "reviews": reviews}
 
+    except httpx.TimeoutException:
+        return {
+            "status": "unavailable",
+            "reviews": [],
+            "reason": "timeout",
+        }
     except (httpx.HTTPError, ValueError, TypeError, KeyError):
         # Fail safely: the caller's original detector results remain unchanged.
         return {"status": "unavailable", "reviews": []}

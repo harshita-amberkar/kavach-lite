@@ -3,6 +3,12 @@
 **Review date:** 2026-10-30
 **Review type:** Static source-snapshot review; not a penetration test or certification.
 
+> **Historical snapshot, superseded for current implementation status.** This
+> review was based on an older checkout and explicitly did not inspect
+> several then-current files. Its findings and recommendations below describe
+> that snapshot only. See the 4 November 2026 addendum at the end for controls
+> verified against the current source. Neither review is a certification.
+
 ## Source evidence and limitations
 
 This review inspected:
@@ -97,3 +103,48 @@ The extension options page previously stated that nothing typed is ever sent any
 The current generated synthetic test split contains 165 prompts and 45 negatives. After adding PERSON-context and business-identifier phone filters, the recorded global detector false-alarm rate was 0% (0/45), with MICRO_ALL F1 0.96 and MICRO_SHARED F1 1.00. Latency was p50 7.490 ms and p95 12.693 ms.
 
 This is limited synthetic benchmark evidence, not a penetration test, independent evaluation or production-wide accuracy claim. PERSON and LOCATION positive detection remain unvalidated because the gold dataset contains no corresponding positive examples. Presidio is configured for English; language-grouped results do not establish multilingual support.
+
+## Current implementation addendum — 4 November 2026
+
+The following controls were checked against the current source after the
+historical review. They are implemented features, not proof of complete
+security or detection accuracy:
+
+- The supported Windows launcher binds Uvicorn to `127.0.0.1`; startup checks
+  `/api/health`, and the stop script validates process identity before stop.
+  The health route is public; other API routes require the KAVACH token.
+- The supported release mode is local Windows operation through the
+  PowerShell launchers. Docker remains experimental and unsupported; token
+  provisioning, persistent SQLite storage, and multi-process rate limiting
+  are unvalidated. Do not expose its configuration to a network or treat it
+  as production-ready.
+- Ollama URLs accept only `localhost` or loopback IP literals. Requests
+  disable environment proxy inheritance and redirects. The agent receives
+  bounded workflow metadata or finding type/confidence data and a redacted
+  context marker, never the original or masked prompt or detected source
+  values. The configured chat proxy is separate and forwards masked messages
+  to its selected upstream.
+- File scans accept TXT/PDF only, cap the file at 5 MiB and the complete
+  multipart request at 5 MiB plus 64 KiB, and cap PDFs at 20 pages. pypdf
+  parsing has resource limits; malformed/parser-limit PDFs receive a generic
+  read error while password, file-size, page-count and no-readable-text cases
+  have fixed explanatory responses. OCR is not implemented.
+- Responses receive CSP, `nosniff`, and `no-referrer`; API and proxy responses
+  are `no-store`. The in-memory rolling limits are 30/minute for `/api/scan`,
+  10/minute for `/api/scan-file`, and 20/minute for `/v1/chat/completions`,
+  with HTTP 429 and `Retry-After: 60`. They are process-local and do not cover
+  `/api/scan-global` or `/api/agentic/scan`.
+- SQLite audit writes contain workflow metadata only. Expired rows are
+  transactionally cleaned after audit writes, at most hourly; retention is
+  30 days by default and `KAVACH_AUDIT_RETENTION_DAYS=0` disables cleanup.
+  SQLite is not encrypted by default.
+- Extension detection remains distinct from backend global detection: the
+  extension does not run Presidio. Its 1,557 parity fixture checks native
+  Python/JavaScript behavior only; selected deterministic global rules have
+  separate regression cases.
+
+The current setup is local-first. Distributed rate limiting, cloud hosting,
+24/7 monitoring, encrypted SQLite, OCR, production certification and
+guaranteed accuracy are not implemented. Interactive FastAPI `/docs` may be
+blocked by the strict CSP; `/openapi.json` remains available. Future exposure
+beyond loopback needs a separate deployment and security review.

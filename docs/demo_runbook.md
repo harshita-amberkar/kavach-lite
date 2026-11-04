@@ -1,6 +1,6 @@
 # KAVACH Lite — Demo Runbook
 
-**Updated:** 31 October 2026
+**Updated:** 4 November 2026
 **Application commit:** run `git rev-parse --short HEAD`; update this field after the final reviewed commit.
 
 ## 1. Project overview
@@ -21,7 +21,7 @@ The dashboard has two user-facing sections:
 
 - **Protect:** scan prompts, choose protection options, inspect protected
   output, copy it and scan supported documents.
-- **Settings:** save default protection mode and masking format, and find
+- **Settings:** save the default masking format and find
   Chrome extension policy instructions.
 
 The dashboard no longer displays Recent Activity. Backend audit recording
@@ -29,7 +29,8 @@ and the history API remain available.
 
 ## 2. Understand the two protection choices
 
-Protection mode and masking format are separate settings.
+Protection mode is selected on the Protect screen for each scan. The
+Settings screen stores only the default masking format.
 
 ### Protection mode
 
@@ -50,9 +51,15 @@ They do not configure Chrome extension per-type policies.
 
 ## 3. Start KAVACH
 
-Open PowerShell in:
+The supported release setup is local Windows operation through the
+PowerShell launchers. Docker is experimental and unsupported for this
+release; its token provisioning, persistent SQLite storage, and
+multi-process rate limiting have not been validated. Do not use the Docker
+configuration for network exposure or production deployment. The Docker
+files are retained as experimental configuration only.
 
-`C:\Users\vijay\Downloads\kavach\kavach`
+Open PowerShell in the project root, the directory containing `app.py`,
+`kavach/`, `extension/`, and `tools/`.
 
 ### Check Ollama
 
@@ -105,18 +112,20 @@ Check the health endpoint:
 Invoke-RestMethod http://127.0.0.1:8000/api/health
 ```
 
-Expected: a successful response with status `ok`.
+Expected: a successful response with status `ok` and `database` and
+`ollama` component states. Ollama is shown as disabled unless the optional
+agent is enabled. The dashboard repeats this local check every 30 seconds;
+it is not cloud or continuous monitoring.
 
 ## 4. Demonstrate Settings
 
 Open **Settings**.
 
 Demonstrate:
-1. Default protection mode: Standard or Autonomous.
-2. Default masking format: Label or Partial.
-3. Save preferences.
-4. Refresh the page and confirm that the preferences persist.
-5. Use Reset defaults to restore Standard and Label.
+1. Choose the default masking format: Label or Partial.
+2. Save preferences.
+3. Refresh the page and confirm that the preference persists.
+4. Use Reset preferences to restore Label masking.
 
 These settings are browser-local dashboard preferences.
 
@@ -235,8 +244,9 @@ Test:
 Under Protect, select a synthetic TXT or text-based PDF.
 
 Current limits:
-- TXT and text-based PDF
-- Maximum file size: 5 MB
+- TXT and text-based PDF only; maximum file size is 5 MiB.
+- Complete multipart request limit: 5 MiB plus 64 KiB for form framing.
+- PDFs are limited to 20 pages; encrypted, malformed, or resource-limit-exceeding files are rejected with a generic error.
 - Image-only PDF/OCR is not supported in the current scope.
 
 Steps:
@@ -329,7 +339,10 @@ From the project root:
 .\.venv\Scripts\python.exe -m unittest discover -v
 ```
 
-Latest recorded result for the committed version: 57 tests passed.
+Latest verified working-tree preflight on 4 November 2026: 105 Python tests
+passed. This includes one health-report regression test added during this
+review. This is a local run result, not a claim about the last committed
+revision. The complete command is `tools\\run_preflight.ps1`.
 
 ### Python syntax
 
@@ -376,7 +389,7 @@ results.
 | Old dashboard appears | Press Ctrl + Shift + R. |
 | Settings do not persist | Check browser local storage and the dashboard origin. |
 | Extension is unavailable | Check `chrome://extensions` and reload the unpacked extension. |
-| PDF scan fails | Check that it is text-based and within the 5 MB limit. |
+| PDF scan fails | Check that it is unencrypted, text-based, within the 5 MiB file and multipart limits, and no more than 20 pages. Parser/resource-limit errors are returned as a generic invalid-PDF response. |
 | Unexpected detection | Inspect finding type and positions, then reproduce with synthetic data before changing detection rules. |
 
 ## 13. Security and known limitations

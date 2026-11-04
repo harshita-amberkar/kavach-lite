@@ -2,9 +2,15 @@ __pycache__/
 *.pyc
 .env
 .venv/
+.vscode/
+/Microsoft/
 
 # Local environment variants
 .env.*
+*.env
+*.env.*
+/.envrc
+/production.env
 !.env.example
 
 # Python tooling and environments
@@ -24,12 +30,18 @@ build/
 *.pem
 *.p12
 *.pfx
+*.key
+*.p8
+*.jks
+*.keystore
 credentials.json
 secrets.json
 
 # Local backups and logs
 *.bak
 *.log
+*.pid
+*.tmp
 README_before_release.md
 
 # Temporary evaluation backups and broken experiments
@@ -39,3 +51,24 @@ eval/run_broken.py
 *.db
 *.sqlite
 *.sqlite3
+*.db-*
+*.sqlite-*
+
+# Local runtime state
+/data/
+
+# Workstation-only fixtures and generated datasets
+/proxy-test.json
+/dataset.jsonl
+/sample.pdf
+/sample.txt
+/make_sets.py
+/mock_upstream.py
+
+# Transient top-level evaluation output; curated report directories remain included
+/results/report.md
+/results/report.json
+/results/errors.jsonl
+/results/holdout_report.md
+/results/holdout_report.json
+/results/holdout_errors.jsonl

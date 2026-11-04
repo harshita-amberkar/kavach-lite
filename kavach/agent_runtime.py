@@ -10,7 +10,13 @@ import re
 
 import httpx
 
-from kavach.agent import AGENT_ENABLED, AGENT_TIMEOUT, OLLAMA_MODEL, OLLAMA_URL
+from kavach.agent import (
+    AGENT_ENABLED,
+    AGENT_TIMEOUT,
+    OLLAMA_MODEL,
+    OLLAMA_URL,
+    validate_ollama_url,
+)
 from kavach.global_detector import analyze_global
 
 
@@ -609,7 +615,7 @@ def _ask_model(runtime):
     )
 
     response = httpx.post(
-        OLLAMA_URL,
+        validate_ollama_url(OLLAMA_URL),
         json={
             "model": OLLAMA_MODEL,
             "prompt": prompt,
@@ -618,6 +624,8 @@ def _ask_model(runtime):
             "options": {"temperature": 0},
         },
         timeout=AGENT_TIMEOUT,
+        trust_env=False,
+        follow_redirects=False,
     )
     response.raise_for_status()
 
@@ -684,6 +692,7 @@ def run_autonomous_privacy_agent(text, mode="label", enabled=None, planner=None)
     runtime = PrivacyToolRuntime(text, mode)
     agent_status = "ok" if use_agent else "disabled"
     fallback_used = not use_agent
+    agent_failure_reason = None
 
     if use_agent:
         planner_failed = None
@@ -726,6 +735,9 @@ def run_autonomous_privacy_agent(text, mode="label", enabled=None, planner=None)
                     break
 
             except Exception as exc:
+                if isinstance(exc, httpx.TimeoutException):
+                    agent_failure_reason = "timeout"
+
                 allowed_failures = {
                     "invalid_agent_action",
                     "premature_completion",
@@ -754,4 +766,8 @@ def run_autonomous_privacy_agent(text, mode="label", enabled=None, planner=None)
         # A successful planner may still explicitly request human review.
         agent_status = "ok"
 
-    return runtime.result(agent_status, fallback_used)
+    result = runtime.result(agent_status, fallback_used)
+    if agent_failure_reason:
+        result["agent_review"]["reason"] = agent_failure_reason
+
+    return result

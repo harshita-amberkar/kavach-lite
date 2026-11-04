@@ -1,0 +1,56 @@
+# Git and local development
+.git/
+.venv/
+venv/
+.vscode/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Workstation PowerShell analysis cache
+/Microsoft/
+
+# Secrets and local configuration
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+
+# Local runtime data
+*.log
+*.pid
+*.tmp
+*.local
+
+# Local databases, audit history and evaluation outputs
+/data/
+/results/
+*.db
+*.sqlite
+*.sqlite3
+*.db-*
+*.sqlite-*
+*.jsonl
+
+# Workstation-only samples and proxy/evaluation fixtures
+/proxy-test.json
+/dataset.jsonl
+/sample.pdf
+/sample.txt
+/mock_upstream.py
+/make_sets.py
+
+# Development backups
+*.bak
+*.backup
+*.before-*
+*.pre-*
+
+# Generated backups and build artifacts
+kavach-local-backups-*/
+node_modules/
+dist/
+build/

@@ -5,9 +5,12 @@ raw sensitive values, and free-form AI explanations are never persisted.
 """
 
 import json
+import logging
 import os
 import sqlite3
-from datetime import datetime, timezone
+import threading
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -20,13 +23,135 @@ DB_PATH = Path(
     )
 )
 
+logger = logging.getLogger(__name__)
+DEFAULT_RETENTION_DAYS = 30
+_retention_setting = os.getenv("KAVACH_AUDIT_RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS)).strip()
+try:
+    AUDIT_RETENTION_DAYS = int(_retention_setting)
+    if not 0 <= AUDIT_RETENTION_DAYS <= 36500:
+        raise ValueError
+except ValueError:
+    logger.warning(
+        "Invalid KAVACH_AUDIT_RETENTION_DAYS configuration; using the default."
+    )
+    AUDIT_RETENTION_DAYS = DEFAULT_RETENTION_DAYS
 
-def _connect():
+_CLEANUP_INTERVAL_SECONDS = 60 * 60
+_CLEANUP_LOCK = threading.Lock()
+_LAST_CLEANUP_SCHEDULED: float | None = None
+
+
+def _connect(db_path: Path | None = None, timeout: float = 5):
     """Open a SQLite connection with a bounded lock timeout."""
-    connection = sqlite3.connect(str(DB_PATH), timeout=5)
+    connection = sqlite3.connect(str(db_path or DB_PATH), timeout=timeout)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     return connection
+
+
+def database_status() -> str:
+    """Check an existing audit database without creating or changing it."""
+    if not DB_PATH.is_file():
+        return "unavailable"
+    try:
+        connection = _connect(timeout=0.25)
+        try:
+            connection.execute("SELECT 1").fetchone()
+        finally:
+            connection.close()
+        return "available"
+    except Exception:
+        return "unavailable"
+
+
+def cleanup_expired_runs(
+    *,
+    db_path: Path | None = None,
+    retention_days: int | None = None,
+    now: datetime | None = None,
+    lock_timeout: float = 5,
+) -> int:
+    """Delete only expired audit rows, in one immediate transaction.
+
+    A zero retention setting disables cleanup. Missing databases/tables are
+    left untouched; this function never initializes or resets the schema.
+    """
+    selected_path = Path(db_path or DB_PATH)
+    days = AUDIT_RETENTION_DAYS if retention_days is None else int(retention_days)
+    if days == 0 or not selected_path.is_file():
+        return 0
+    if days < 0:
+        raise ValueError("retention_days must be zero or greater")
+
+    current_time = now or datetime.now(timezone.utc)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
+    cutoff = (current_time.astimezone(timezone.utc) - timedelta(days=days)).isoformat()
+
+    connection = _connect(selected_path, timeout=lock_timeout)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        table_exists = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            ("workflow_runs",),
+        ).fetchone()
+        if not table_exists:
+            connection.rollback()
+            return 0
+
+        cursor = connection.execute(
+            "DELETE FROM workflow_runs WHERE julianday(created_at) < julianday(?)",
+            (cutoff,),
+        )
+        deleted_count = cursor.rowcount
+        connection.commit()
+        return deleted_count
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def _cleanup_worker(db_path: Path, retention_days: int) -> None:
+    """Perform best-effort cleanup without exposing database details."""
+    try:
+        cleanup_expired_runs(
+            db_path=db_path,
+            retention_days=retention_days,
+            lock_timeout=0.25,
+        )
+    except sqlite3.OperationalError:
+        logger.info("Audit retention cleanup deferred due to SQLite contention.")
+    except Exception as exc:
+        logger.warning("Audit retention cleanup failed (%s).", type(exc).__name__)
+
+
+def _schedule_cleanup() -> None:
+    """Throttle cleanup and run it asynchronously after audit writes."""
+    global _LAST_CLEANUP_SCHEDULED
+    if AUDIT_RETENTION_DAYS == 0:
+        return
+
+    now = time.monotonic()
+    with _CLEANUP_LOCK:
+        if (
+            _LAST_CLEANUP_SCHEDULED is not None
+            and now - _LAST_CLEANUP_SCHEDULED < _CLEANUP_INTERVAL_SECONDS
+        ):
+            return
+        _LAST_CLEANUP_SCHEDULED = now
+
+    try:
+        cleanup_thread = threading.Thread(
+            target=_cleanup_worker,
+            args=(Path(DB_PATH), AUDIT_RETENTION_DAYS),
+            name="kavach-audit-retention",
+            daemon=True,
+        )
+        cleanup_thread.start()
+    except Exception as exc:
+        logger.warning("Could not schedule audit retention cleanup (%s).", type(exc).__name__)
 
 
 def init_db() -> None:
@@ -155,12 +280,15 @@ def record_run(
             values,
         )
         connection.commit()
-        return int(cursor.lastrowid)
+        run_id = int(cursor.lastrowid)
     except Exception:
         connection.rollback()
         raise
     finally:
         connection.close()
+
+    _schedule_cleanup()
+    return run_id
 
 
 def list_recent_runs(limit: int = 20) -> list[dict]:

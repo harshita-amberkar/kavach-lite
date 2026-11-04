@@ -1,7 +1,7 @@
 ﻿import json
 import httpx
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from kavach.agent_runtime import PrivacyToolRuntime, _ask_model, run_autonomous_privacy_agent
 
@@ -171,6 +171,66 @@ class AutonomousAgentRuntimeTests(unittest.TestCase):
         self.assertNotIn(self.prompt, prompt)
         self.assertNotIn("demo@example.com", prompt)
 
+    def test_enabled_runtime_calls_configured_ollama_model_with_safe_state(self):
+        actions = [
+            {"tool": "scan_prompt", "arguments": {}},
+            {"tool": "verify_masked_output", "arguments": {}},
+            {"tool": "complete", "arguments": {}},
+        ]
+        responses = []
+        for action in actions:
+            response = Mock()
+            response.raise_for_status.return_value = None
+            response.json.return_value = {
+                "response": json.dumps(action),
+            }
+            responses.append(response)
+
+        with patch(
+            "kavach.agent_runtime.AGENT_ENABLED", True
+        ), patch(
+            "kavach.agent_runtime.OLLAMA_MODEL", "llama3.2:3b"
+        ), patch(
+            "kavach.agent_runtime.httpx.post",
+            side_effect=responses,
+        ) as ollama:
+            with patch.dict(
+                "os.environ",
+                {
+                    "HTTP_PROXY": "http://proxy.invalid:8080",
+                    "HTTPS_PROXY": "http://proxy.invalid:8080",
+                    "ALL_PROXY": "http://proxy.invalid:8080",
+                },
+            ), patch(
+                "kavach.agent_runtime.analyze_global",
+                side_effect=[
+                    scan_result(
+                        [self.finding],
+                        "Contact [EMAIL] for support.",
+                    ),
+                    scan_result(
+                        [],
+                        "Contact [EMAIL] for support.",
+                    ),
+                ],
+            ):
+                result = run_autonomous_privacy_agent(self.prompt)
+
+        self.assertEqual(result["agent_review"]["status"], "ok")
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(ollama.call_count, 3)
+        for call in ollama.call_args_list:
+            self.assertIs(call.kwargs["trust_env"], False)
+            self.assertIs(call.kwargs["follow_redirects"], False)
+            self.assertEqual(
+                call.kwargs["json"]["model"],
+                "llama3.2:3b",
+            )
+            self.assertNotIn(
+                "demo@example.com",
+                call.kwargs["json"]["prompt"],
+            )
+
     def test_human_review_request_is_terminal(self):
         actions = iter([
             {"tool": "scan_prompt", "arguments": {}},
@@ -337,7 +397,7 @@ class AutonomousAgentRuntimeTests(unittest.TestCase):
     def test_ollama_timeout_falls_back_and_verifies_masking(self):
         with patch(
             "kavach.agent_runtime.httpx.post",
-            side_effect=httpx.TimeoutException("synthetic timeout"),
+            side_effect=httpx.TimeoutException("PRIVATE_EMAIL_SENTINEL"),
         ), patch(
             "kavach.agent_runtime.analyze_global",
             side_effect=[
@@ -353,6 +413,8 @@ class AutonomousAgentRuntimeTests(unittest.TestCase):
             )
 
         self.assertEqual(result["status"], "needs_review")
+        self.assertEqual(result["agent_review"]["reason"], "timeout")
+        self.assertNotIn("PRIVATE_EMAIL_SENTINEL", repr(result))
         self.assertEqual(
             result["masked_text"], "Contact [EMAIL] for support."
         )

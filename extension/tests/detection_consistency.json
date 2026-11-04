@@ -1,0 +1,120 @@
+[
+  {
+    "name": "placeholder credential is ignored",
+    "text": "api_key=REPLACE_ME",
+    "native_types": [],
+    "global_types": [],
+    "extension_types": []
+  },
+  {
+    "name": "quoted credential value with spaces",
+    "text": "api_key=\"this is a synthetic long credential value\"",
+    "native_types": ["API_KEY"],
+    "global_types": ["API_KEY"],
+    "extension_types": ["API_KEY"]
+  },
+  {
+    "name": "checksum-valid Aadhaar-shaped business batch number is suppressed",
+    "text": "Batch number 4330-4064-4928",
+    "native_types": [],
+    "global_types": [],
+    "extension_types": []
+  },
+  {
+    "name": "explicit Aadhaar context takes priority over business labels",
+    "text": "Batch number with Aadhaar 4330-4064-4928",
+    "native_types": ["AADHAAR"],
+    "global_types": ["AADHAAR"],
+    "extension_types": ["AADHAAR"]
+  },
+  {
+    "name": "bearer credential from global secret rule",
+    "text": "Authorization: Bearer test.synthetic.value",
+    "native_types": [],
+    "global_types": ["API_KEY"],
+    "extension_types": ["API_KEY"]
+  },
+  {
+    "name": "database connection credential from global secret rule",
+    "text": "Database postgres://demo:synthetic@localhost/example",
+    "native_types": [],
+    "global_types": ["API_KEY"],
+    "extension_types": ["API_KEY"]
+  },
+  {
+    "name": "JWT-shaped value from global secret rule",
+    "text": "token eyJsynthetic.payload.signature",
+    "native_types": [],
+    "global_types": ["API_KEY"],
+    "extension_types": ["API_KEY"]
+  },
+  {
+    "name": "labelled US SSN from global rule",
+    "text": "SSN: 078-05-1120",
+    "native_types": [],
+    "global_types": ["US_SSN"],
+    "extension_types": ["US_SSN"]
+  },
+  {
+    "name": "contextual medical information",
+    "text": "The patient has diabetes and takes metformin.",
+    "native_types": [],
+    "global_types": ["MEDICAL_INFO"],
+    "extension_types": ["MEDICAL_INFO"]
+  },
+  {
+    "name": "confidential business context",
+    "text": "Our fictional company has an unannounced product roadmap.",
+    "native_types": [],
+    "global_types": ["CONFIDENTIAL_BUSINESS"],
+    "extension_types": ["CONFIDENTIAL_BUSINESS"]
+  },
+  {
+    "name": "Presidio contextual person finding is not in browser subset",
+    "text": "My name is John Smith.",
+    "native_types": [],
+    "global_types": ["PERSON"],
+    "extension_types": [],
+    "presidio": {"entity": "PERSON", "value": "John Smith"}
+  },
+  {
+    "name": "Presidio personal location finding is not in browser subset",
+    "text": "I live in London.",
+    "native_types": [],
+    "global_types": ["LOCATION"],
+    "extension_types": [],
+    "presidio": {"entity": "LOCATION", "value": "London"}
+  },
+  {
+    "name": "Presidio IBAN finding is not in browser subset",
+    "text": "IBAN DE89370400440532013000",
+    "native_types": [],
+    "global_types": ["IBAN"],
+    "extension_types": [],
+    "presidio": {"entity": "IBAN_CODE", "value": "DE89370400440532013000"}
+  },
+  {
+    "name": "Presidio IP address finding is not in browser subset",
+    "text": "Server IP 192.0.2.10",
+    "native_types": [],
+    "global_types": ["IP_ADDRESS"],
+    "extension_types": [],
+    "presidio": {"entity": "IP_ADDRESS", "value": "192.0.2.10"}
+  },
+  {
+    "name": "Presidio MAC address finding is not in browser subset",
+    "text": "Device MAC 00:1B:44:11:3A:B7",
+    "native_types": [],
+    "global_types": ["MAC_ADDRESS"],
+    "extension_types": [],
+    "presidio": {"entity": "MAC_ADDRESS", "value": "00:1B:44:11:3A:B7"}
+  },
+  {
+    "name": "Presidio regional identifier is not in browser subset",
+    "text": "NINO AB123456C",
+    "native_types": [],
+    "global_types": ["UK_NINO"],
+    "extension_types": [],
+    "presidio": {"entity": "UK_NINO", "value": "AB123456C"}
+  }
+]

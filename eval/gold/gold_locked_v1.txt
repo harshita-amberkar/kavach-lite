@@ -21,7 +21,7 @@ hinglish:tricky | Demo payment handle [[UPI_ID:anaya25@paytm]] hai.
 en:real | The fake API credential fixture is [[API_KEY:sk-proj-4D7A9C2F6B1E8A3D5C0F2A9B]].
 hi:real | परीक्षण API कुंजी [[API_KEY:sk-live-9B2F6D1A8C4E7F3B0A5D2C91]] है।
 mr:tricky | बनावट API टोकन [[API_KEY:sk-test-7F4A1C9D2E6B8A3F5D0C7E12]] चाचणीत वापरा.
-hinglish:tricky | Synthetic cloud credential [[API_KEY:AKIAQZ8MN4P2R7X6C3VD]] hai.
+hinglish:tricky | Synthetic cloud credential [[API_KEY:AKIAIOSFODNN7EXAMPLE]] hai.
 en:neg | The documentation build completed on 2026-10-26.
 hi:neg | यह केवल एक सामान्य परीक्षण वाक्य है।
 mr:neg | ही एक सामान्य चाचणी नोंद आहे.

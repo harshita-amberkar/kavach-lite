@@ -13,12 +13,17 @@ class AuditPrivacyTests(unittest.TestCase):
             "PRIVATE_EMAIL_SENTINEL",
             "PRIVATE_AI_REASON_SENTINEL",
             "PRIVATE_STEP_TEXT_SENTINEL",
+            "PRIVATE_PASSWORD_SENTINEL",
+            "PRIVATE_TOKEN_SENTINEL",
         ]
 
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "audit_test.db"
 
-            with patch.object(audit, "DB_PATH", db_path):
+            with (
+                patch.object(audit, "DB_PATH", db_path),
+                patch.object(audit, "_schedule_cleanup"),
+            ):
                 run_id = audit.record_run(
                     workflow_name="privacy_test",
                     status="completed",
@@ -29,6 +34,8 @@ class AuditPrivacyTests(unittest.TestCase):
                             "type": "EMAIL",
                             "value": "PRIVATE_EMAIL_SENTINEL",
                             "text": "PRIVATE_PROMPT_SENTINEL",
+                            "password": "PRIVATE_PASSWORD_SENTINEL",
+                            "token": "PRIVATE_TOKEN_SENTINEL",
                         }
                     ],
                     risk={

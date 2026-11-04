@@ -10,6 +10,20 @@ assert.strictEqual(K.decide([f("AADHAAR_POSSIBLE")], { AADHAAR: "block" }).actio
 assert.strictEqual(K.decide([f("AADHAAR_POSSIBLE")], { AADHAAR_POSSIBLE: "block" }).action, "block");
 assert.strictEqual(K.decide([f("AADHAAR")], { AADHAAR: "block" }).action, "block");
 assert.strictEqual(K.mask("pan ABCPE1234F ok", K.scan("pan ABCPE1234F ok")), "pan [PAN] ok");
+
+// The native port keeps parity; the extension scan adds deterministic global rules.
+const consistencyCases = require("./detection_consistency.json");
+for (const c of consistencyCases) {
+  assert.deepStrictEqual(K.scanNative(c.text).map((x) => x.type), c.native_types, c.name);
+  assert.deepStrictEqual(K.scan(c.text).map((x) => x.type), c.extension_types, c.name);
+}
+assert.strictEqual(K.decide([f("US_SSN")], { US_SSN: "block" }).action, "block");
+assert.strictEqual(K.decide([f("MEDICAL_INFO")], { MEDICAL_INFO: "mask" }).action, "mask");
+assert.strictEqual(K.decide([f("CONFIDENTIAL_BUSINESS")], { CONFIDENTIAL_BUSINESS: "allow" }).action, "allow");
+assert.strictEqual(K.decide([f("US_SSN")], {}).action, "warn");
+for (const type of ["US_SSN", "MEDICAL_INFO", "CONFIDENTIAL_BUSINESS"]) {
+  assert.ok(K.TYPES.includes(type), `${type} appears in extension options`);
+}
 // 2) privacy: no network-capable code or permissions anywhere in the extension
 const dir = path.join(__dirname, "..");
 const banned = /\b(fetch|XMLHttpRequest|sendBeacon|WebSocket|EventSource|importScripts)\b|https?:\/\/(?!chatgpt|claude|gemini|chat\.openai)/;

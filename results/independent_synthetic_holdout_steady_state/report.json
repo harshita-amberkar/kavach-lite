@@ -1,0 +1,1452 @@
+{
+  "evaluation": "independent_synthetic_holdout",
+  "dataset": "eval\\independent_holdout\\dataset.jsonl",
+  "dataset_sha256": "5d4e4ae163a2197e9e6755cf5075cc169bacb3d0e1e53deaf63f10ac2686b480",
+  "prompt_count": 60,
+  "tag_counts": {
+    "real": 20,
+    "tricky": 20,
+    "neg": 20
+  },
+  "human_evaluation": false,
+  "latency_method": {
+    "steady_state": "each system received the same synthetic warm-up prompt before timed evaluation",
+    "shared_registry_initialization_ms": 5509.994000000006,
+    "per_system_cold_start": null,
+    "cold_start_note": "not comparable: system initialization occurs eagerly or lazily at different phases"
+  },
+  "systems": {
+    "kavach": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CRYPTO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "GSTIN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IBAN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IP_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "LOCATION": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MAC_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_INFO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_LICENSE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "NRP": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ],
+        "PERSON": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "US_SSN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.9473684210526315,
+          0.45,
+          0.6101694915254238
+        ],
+        "MICRO_SHARED": [
+          0.9090909090909091,
+          1.0,
+          0.9523809523809523
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 0.036149999914414366,
+      "p95_ms": 0.05809999993289239,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FN": 22,
+          "FP": 1
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 1
+          },
+          "real": {
+            "FN": 11
+          },
+          "tricky": {
+            "FN": 11
+          }
+        },
+        "by_entity": {
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 2
+          },
+          "CRYPTO": {
+            "FN": 2
+          },
+          "IBAN": {
+            "FN": 2
+          },
+          "IP_ADDRESS": {
+            "FN": 2
+          },
+          "LOCATION": {
+            "FN": 2
+          },
+          "MAC_ADDRESS": {
+            "FN": 2
+          },
+          "MEDICAL_INFO": {
+            "FN": 2
+          },
+          "MEDICAL_LICENSE": {
+            "FN": 2
+          },
+          "NRP": {
+            "FN": 2
+          },
+          "PAN": {
+            "FP": 1
+          },
+          "PERSON": {
+            "FN": 2
+          },
+          "US_SSN": {
+            "FN": 2
+          }
+        }
+      }
+    },
+    "kavach_global": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          1.0,
+          0.5,
+          0.6666666666666666
+        ],
+        "CRYPTO": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "GSTIN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IBAN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IP_ADDRESS": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ],
+        "LOCATION": [
+          0.4,
+          1.0,
+          0.5714285714285714
+        ],
+        "MAC_ADDRESS": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MEDICAL_INFO": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "MEDICAL_LICENSE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "NRP": [
+          1.0,
+          0.5,
+          0.6666666666666666
+        ],
+        "PAN": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ],
+        "PERSON": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "US_SSN": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ],
+        "MICRO_ALL": [
+          0.8636363636363636,
+          0.95,
+          0.9047619047619048
+        ],
+        "MICRO_SHARED": [
+          0.9090909090909091,
+          1.0,
+          0.9523809523809523
+        ]
+      },
+      "neg_false_alarm_rate": 0.2,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 4,
+        "negative_false_positive_entities": 4,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 8.274500000197804,
+      "p95_ms": 17.36029999983657,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FP": 6,
+          "FN": 2
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 4
+          },
+          "real": {
+            "FP": 2
+          },
+          "tricky": {
+            "FN": 2
+          }
+        },
+        "by_entity": {
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 1
+          },
+          "IP_ADDRESS": {
+            "FP": 1
+          },
+          "LOCATION": {
+            "FP": 3
+          },
+          "NRP": {
+            "FN": 1
+          },
+          "PAN": {
+            "FP": 1
+          },
+          "US_SSN": {
+            "FP": 1
+          }
+        }
+      }
+    },
+    "kavach_block": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CRYPTO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "GSTIN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IBAN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IFSC": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IP_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "LOCATION": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MAC_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_INFO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_LICENSE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "NRP": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ],
+        "PERSON": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "US_SSN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.9473684210526315,
+          0.45,
+          0.6101694915254238
+        ],
+        "MICRO_SHARED": [
+          0.9090909090909091,
+          1.0,
+          0.9523809523809523
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 0.06589999975403771,
+      "p95_ms": 0.1781999999366235,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FN": 22,
+          "FP": 1
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 1
+          },
+          "real": {
+            "FN": 11
+          },
+          "tricky": {
+            "FN": 11
+          }
+        },
+        "by_entity": {
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 2
+          },
+          "CRYPTO": {
+            "FN": 2
+          },
+          "IBAN": {
+            "FN": 2
+          },
+          "IP_ADDRESS": {
+            "FN": 2
+          },
+          "LOCATION": {
+            "FN": 2
+          },
+          "MAC_ADDRESS": {
+            "FN": 2
+          },
+          "MEDICAL_INFO": {
+            "FN": 2
+          },
+          "MEDICAL_LICENSE": {
+            "FN": 2
+          },
+          "NRP": {
+            "FN": 2
+          },
+          "PAN": {
+            "FP": 1
+          },
+          "PERSON": {
+            "FN": 2
+          },
+          "US_SSN": {
+            "FN": 2
+          }
+        }
+      }
+    },
+    "regex_only": {
+      "metrics": {
+        "AADHAAR": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CRYPTO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "GSTIN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IBAN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IP_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "LOCATION": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MAC_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_INFO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_LICENSE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "NRP": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.6666666666666666,
+          1.0,
+          0.8
+        ],
+        "PERSON": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "US_SSN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.7368421052631579,
+          0.35,
+          0.4745762711864407
+        ],
+        "MICRO_SHARED": [
+          0.7692307692307693,
+          1.0,
+          0.8695652173913043
+        ]
+      },
+      "neg_false_alarm_rate": 0.15,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 3,
+        "negative_false_positive_entities": 3,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 0.03184999991390214,
+      "p95_ms": 0.04260000014255638,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FP": 5,
+          "FN": 26
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 3
+          },
+          "real": {
+            "FP": 1,
+            "FN": 13
+          },
+          "tricky": {
+            "FP": 1,
+            "FN": 13
+          }
+        },
+        "by_entity": {
+          "AADHAAR": {
+            "FP": 2
+          },
+          "API_KEY": {
+            "FN": 2
+          },
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 2
+          },
+          "CRYPTO": {
+            "FN": 2
+          },
+          "IBAN": {
+            "FN": 2
+          },
+          "IFSC": {
+            "FN": 2
+          },
+          "IP_ADDRESS": {
+            "FN": 2
+          },
+          "LOCATION": {
+            "FN": 2
+          },
+          "MAC_ADDRESS": {
+            "FN": 2
+          },
+          "MEDICAL_INFO": {
+            "FN": 2
+          },
+          "MEDICAL_LICENSE": {
+            "FN": 2
+          },
+          "NRP": {
+            "FN": 2
+          },
+          "PAN": {
+            "FP": 1
+          },
+          "PERSON": {
+            "FN": 2
+          },
+          "UPI_ID": {
+            "FP": 2
+          },
+          "US_SSN": {
+            "FN": 2
+          }
+        }
+      }
+    },
+    "presidio": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CRYPTO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          null,
+          0.0,
+          0.0
+        ],
+        "GSTIN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IBAN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IP_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "LOCATION": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MAC_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_INFO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_LICENSE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "NRP": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "PERSON": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          null,
+          0.0,
+          0.0
+        ],
+        "US_SSN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.8,
+          0.2,
+          0.32
+        ],
+        "MICRO_SHARED": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 9.849600000052305,
+      "p95_ms": 13.305299999956333,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FP": 2,
+          "FN": 32
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 1
+          },
+          "real": {
+            "FN": 16
+          },
+          "tricky": {
+            "FP": 1,
+            "FN": 16
+          }
+        },
+        "by_entity": {
+          "API_KEY": {
+            "FN": 2
+          },
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 2
+          },
+          "CRYPTO": {
+            "FN": 2
+          },
+          "EMAIL": {
+            "FN": 2
+          },
+          "GSTIN": {
+            "FN": 2
+          },
+          "IBAN": {
+            "FN": 2
+          },
+          "IFSC": {
+            "FN": 2
+          },
+          "IP_ADDRESS": {
+            "FN": 2
+          },
+          "LOCATION": {
+            "FN": 2
+          },
+          "MAC_ADDRESS": {
+            "FN": 2
+          },
+          "MEDICAL_INFO": {
+            "FN": 2
+          },
+          "MEDICAL_LICENSE": {
+            "FN": 2
+          },
+          "NRP": {
+            "FN": 2
+          },
+          "PAN": {
+            "FP": 2
+          },
+          "PERSON": {
+            "FN": 2
+          },
+          "UPI_ID": {
+            "FN": 2
+          },
+          "US_SSN": {
+            "FN": 2
+          }
+        }
+      }
+    },
+    "presidio_custom": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CRYPTO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          null,
+          0.0,
+          0.0
+        ],
+        "GSTIN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IBAN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IP_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "LOCATION": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MAC_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_INFO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_LICENSE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "NRP": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "PERSON": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "US_SSN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.8571428571428571,
+          0.3,
+          0.4444444444444444
+        ],
+        "MICRO_SHARED": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 12.222300000075847,
+      "p95_ms": 16.959699999915756,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FP": 2,
+          "FN": 28
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 1
+          },
+          "real": {
+            "FN": 14
+          },
+          "tricky": {
+            "FP": 1,
+            "FN": 14
+          }
+        },
+        "by_entity": {
+          "API_KEY": {
+            "FN": 2
+          },
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 2
+          },
+          "CRYPTO": {
+            "FN": 2
+          },
+          "EMAIL": {
+            "FN": 2
+          },
+          "IBAN": {
+            "FN": 2
+          },
+          "IFSC": {
+            "FN": 2
+          },
+          "IP_ADDRESS": {
+            "FN": 2
+          },
+          "LOCATION": {
+            "FN": 2
+          },
+          "MAC_ADDRESS": {
+            "FN": 2
+          },
+          "MEDICAL_INFO": {
+            "FN": 2
+          },
+          "MEDICAL_LICENSE": {
+            "FN": 2
+          },
+          "NRP": {
+            "FN": 2
+          },
+          "PAN": {
+            "FP": 2
+          },
+          "PERSON": {
+            "FN": 2
+          },
+          "US_SSN": {
+            "FN": 2
+          }
+        }
+      }
+    },
+    "presidio_norm": {
+      "metrics": {
+        "AADHAAR": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "API_KEY": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CARD": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "CONFIDENTIAL_BUSINESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "CRYPTO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "EMAIL": [
+          null,
+          0.0,
+          0.0
+        ],
+        "GSTIN": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "IBAN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IFSC": [
+          null,
+          0.0,
+          0.0
+        ],
+        "IP_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "LOCATION": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MAC_ADDRESS": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_INFO": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MEDICAL_LICENSE": [
+          null,
+          0.0,
+          0.0
+        ],
+        "NRP": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PAN": [
+          0.5,
+          1.0,
+          0.6666666666666666
+        ],
+        "PERSON": [
+          null,
+          0.0,
+          0.0
+        ],
+        "PHONE": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "UPI_ID": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "US_SSN": [
+          null,
+          0.0,
+          0.0
+        ],
+        "MICRO_ALL": [
+          0.8571428571428571,
+          0.3,
+          0.4444444444444444
+        ],
+        "MICRO_SHARED": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "neg_false_alarm_rate": 0.05,
+      "negative_details": {
+        "negative_prompts": 20,
+        "negative_prompt_false_alarms": 1,
+        "negative_false_positive_entities": 1,
+        "gold_counts": {
+          "AADHAAR": 2,
+          "API_KEY": 2,
+          "CARD": 2,
+          "CONFIDENTIAL_BUSINESS": 2,
+          "CRYPTO": 2,
+          "EMAIL": 2,
+          "GSTIN": 2,
+          "IBAN": 2,
+          "IFSC": 2,
+          "IP_ADDRESS": 2,
+          "LOCATION": 2,
+          "MAC_ADDRESS": 2,
+          "MEDICAL_INFO": 2,
+          "MEDICAL_LICENSE": 2,
+          "NRP": 2,
+          "PAN": 2,
+          "PERSON": 2,
+          "PHONE": 2,
+          "UPI_ID": 2,
+          "US_SSN": 2
+        }
+      },
+      "p50_ms": 9.244049999779236,
+      "p95_ms": 13.897099999667262,
+      "latency_method": "steady_state_after_shared_synthetic_warmup",
+      "error_analysis": {
+        "by_kind": {
+          "FP": 2,
+          "FN": 28
+        },
+        "by_tag": {
+          "neg": {
+            "FP": 1
+          },
+          "real": {
+            "FN": 14
+          },
+          "tricky": {
+            "FP": 1,
+            "FN": 14
+          }
+        },
+        "by_entity": {
+          "API_KEY": {
+            "FN": 2
+          },
+          "CONFIDENTIAL_BUSINESS": {
+            "FN": 2
+          },
+          "CRYPTO": {
+            "FN": 2
+          },
+          "EMAIL": {
+            "FN": 2
+          },
+          "IBAN": {
+            "FN": 2
+          },
+          "IFSC": {
+            "FN": 2
+          },
+          "IP_ADDRESS": {
+            "FN": 2
+          },
+          "LOCATION": {
+            "FN": 2
+          },
+          "MAC_ADDRESS": {
+            "FN": 2
+          },
+          "MEDICAL_INFO": {
+            "FN": 2
+          },
+          "MEDICAL_LICENSE": {
+            "FN": 2
+          },
+          "NRP": {
+            "FN": 2
+          },
+          "PAN": {
+            "FP": 2
+          },
+          "PERSON": {
+            "FN": 2
+          },
+          "US_SSN": {
+            "FN": 2
+          }
+        }
+      }
+    }
+  }
+}
