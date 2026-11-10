@@ -107,8 +107,20 @@ a 5 MiB plus 64 KiB total multipart limit, a 20-page PDF cap and pypdf
 resource limits; generic upload/parser errors; response CSP and standard
 security headers; selected per-client API rate limits; and asynchronous,
 transactional audit retention (30 days by default, `0` disables it).
-SQLite remains unencrypted by default. Rate limits remain in-process and
-do not apply to `/api/scan-global` or `/api/agentic/scan`. The extension
+SQLite remains unencrypted by default. The dashboard and owner APIs are
+available only to loopback clients in default local mode; `/healthz` exposes
+minimal liveness. Selected rate limits remain in-process, reset on restart,
+and do not coordinate workers. The app does not use forwarding headers; an
+upstream proxy can still change the address exposed by the ASGI server.
+Limits do not apply to `/api/scan-global` or `/api/agentic/scan`.
+Owner APIs are loopback-only by default and use the direct ASGI peer address;
+`X-Forwarded-For`, `X-Real-IP`, and `Forwarded` do not establish local access.
+The Windows launcher binds to `127.0.0.1` and disables proxy-header handling.
+The local mode is for the current single-user laptop setup and must not sit
+behind a reverse proxy. Future remote deployments must explicitly select
+`KAVACH_OWNER_ACCESS_MODE=token` and configure a private token of at least 40
+characters; token mode retains token authentication on owner APIs.
+The extension
 does not run the backend's Presidio recognizers; its parity number covers
 only native detector fixtures, with separate regression coverage for
 selected deterministic global rules.

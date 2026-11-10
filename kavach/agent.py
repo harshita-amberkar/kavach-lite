@@ -70,6 +70,18 @@ def _sanitize_context(_text: str, _start: int, _end: int) -> str:
     return "[REDACTED]"
 
 
+def _safe_review_list(value) -> list[str]:
+    """Keep bounded, plain-text advisory fields from the local model."""
+    if not isinstance(value, list):
+        return []
+
+    safe = []
+    for item in value[:5]:
+        if isinstance(item, str) and item.strip():
+            safe.append(item.strip()[:160])
+    return safe
+
+
 def review_findings(text: str, findings: list[dict]) -> dict:
     """Ask the local model for advisory reviews; never alter scan results."""
     if not AGENT_ENABLED:
@@ -116,7 +128,10 @@ def review_findings(text: str, findings: list[dict]) -> dict:
         "Do not infer or reconstruct source values. "
         "Return JSON only in this format: "
         '{"reviews":[{"id":0,"assessment":"likely|uncertain|unlikely",'
-        '"reason":"brief reason"}]}. '
+        '"reason":"brief reason","privacy_concerns":[],'
+        '"recommendations":[]}]}. '
+        "Privacy concerns and recommendations must be brief and based only "
+        "on the candidate type and confidence. Do not infer source values. "
         "Do not recommend sending, unmasking, or revealing sensitive data. "
         "Candidates:\n"
         + json.dumps(candidates, ensure_ascii=True)
@@ -167,11 +182,16 @@ def review_findings(text: str, findings: list[dict]) -> dict:
             }:
                 continue
 
-            reviews.append({
+            safe_review = {
                 "id": item["id"],
                 "assessment": item["assessment"],
                 "reason": str(item.get("reason", ""))[:160],
-            })
+            }
+            for field in ("privacy_concerns", "recommendations"):
+                safe_values = _safe_review_list(item.get(field))
+                if safe_values:
+                    safe_review[field] = safe_values
+            reviews.append(safe_review)
 
         return {"status": "ok", "reviews": reviews}
 

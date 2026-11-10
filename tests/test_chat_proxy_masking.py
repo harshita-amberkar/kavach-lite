@@ -79,7 +79,11 @@ class ChatProxyMaskingTests(unittest.TestCase):
             "app.httpx.AsyncClient",
             return_value=mock_client,
         ):
-            with TestClient(kavach_app.app,base_url="http://127.0.0.1",) as client:
+            with TestClient(
+                kavach_app.app,
+                base_url="http://127.0.0.1",
+                client=("127.0.0.1", 50000),
+            ) as client:
                 response = client.post(
                     "/v1/chat/completions",
                     headers=headers,
@@ -168,6 +172,7 @@ class ChatProxyMaskingTests(unittest.TestCase):
                     with TestClient(
                         kavach_app.app,
                         base_url="http://127.0.0.1",
+                        client=("127.0.0.1", 50000),
                     ) as client:
                         response = client.post(
                             "/v1/chat/completions",
@@ -238,6 +243,7 @@ class ChatProxyMaskingTests(unittest.TestCase):
                     with TestClient(
                         kavach_app.app,
                         base_url="http://127.0.0.1",
+                        client=("127.0.0.1", 50000),
                     ) as client:
                         response = client.post(
                             "/v1/chat/completions",
@@ -300,6 +306,7 @@ class ChatProxyMaskingTests(unittest.TestCase):
                     with TestClient(
                         kavach_app.app,
                         base_url="http://127.0.0.1",
+                        client=("127.0.0.1", 50000),
                     ) as client:
                         response = client.post(
                             "/v1/chat/completions",
@@ -345,6 +352,7 @@ class ChatProxyMaskingTests(unittest.TestCase):
                 with TestClient(
                     kavach_app.app,
                     base_url="http://127.0.0.1",
+                    client=("127.0.0.1", 50000),
                 ) as client:
                     response = client.post(
                         "/v1/chat/completions",
@@ -375,10 +383,13 @@ class ChatProxyMaskingTests(unittest.TestCase):
             "messages": [{"role": "user", "content": content}],
         }
 
-        with patch(
-            "kavach.global_detector._get_analyzer",
-            side_effect=RuntimeError("synthetic Presidio unavailable"),
-        ) as presidio_failure:
+        with (
+            patch(
+                "kavach.global_detector._get_analyzer",
+                side_effect=RuntimeError("synthetic Presidio unavailable"),
+            ) as presidio_failure,
+            patch("app.preload_analyzer", return_value=0),
+        ):
             with patch(
                 "app.httpx.AsyncClient",
                 return_value=mock_client,
@@ -386,6 +397,7 @@ class ChatProxyMaskingTests(unittest.TestCase):
                 with TestClient(
                     kavach_app.app,
                     base_url="http://127.0.0.1",
+                    client=("127.0.0.1", 50000),
                 ) as client:
                     response = client.post(
                         "/v1/chat/completions",

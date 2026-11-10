@@ -4,7 +4,7 @@
 
 ## Current security behavior
 
-The supported release runs locally on Windows through the PowerShell launchers. The included Docker files are experimental and unsupported; token provisioning, persistent SQLite storage, and multi-process rate limiting have not been validated. Do not expose the Docker setup to a network or treat it as production-ready. The Windows launcher binds the API to `127.0.0.1`; `GET /api/health` and the dashboard report local backend, SQLite accessibility, and optional Ollama/model state. This is local health visibility, not cloud hosting or 24/7 monitoring. Use `tools\stop_kavach.ps1` for identity-checked shutdown. The optional Ollama client is restricted to loopback, disables environment-proxy use and redirects, and sends workflow/finding metadata rather than original or masked prompts or detected source values. The separate chat proxy can forward masked messages to its configured upstream.
+The supported release runs locally on Windows through the PowerShell launchers. The included Docker files are experimental and unsupported; token provisioning, persistent SQLite storage, and multi-process rate limiting have not been validated. Do not expose the Docker setup to a network or treat it as production-ready. The Windows launcher binds the API to `127.0.0.1`, disables forwarded-header processing, and the server independently limits owner APIs to direct loopback clients in the default `local` access mode. The full owner dashboard is served at `/`; local dashboard use needs no owner token prompt. A future remote deployment must explicitly enable token mode and configure a strong token, and still requires separate deployment security review. This is local operation, not cloud hosting or 24/7 monitoring. Use `tools\stop_kavach.ps1` for identity-checked shutdown. The optional Ollama client is restricted to loopback, disables environment-proxy use and redirects, and sends workflow/finding metadata rather than original or masked prompts or detected source values. The separate chat proxy can forward masked messages to its configured upstream.
 
 ## Windows quick start
 
@@ -16,8 +16,8 @@ The supported release runs locally on Windows through the PowerShell launchers. 
    .\.venv\Scripts\python.exe -m pip install -r requirements.txt
    ```
 
-3. Follow the [full Windows setup](README.md#run-locally-windows-powershell) to create a private `.env` with a local API token. Do not use the example token placeholder as a credential.
-4. Start KAVACH with `.\tools\start_kavach.ps1`, check `http://127.0.0.1:8000/api/health`, and stop it with `.\tools\stop_kavach.ps1`.
+3. Follow the [full Windows setup](README.md#run-locally-windows-powershell) to create a private `.env`. The default single-user local mode does not require an API token.
+4. Start KAVACH with `.\tools\start_kavach.ps1`, check `http://127.0.0.1:8000/healthz`, and stop it with `.\tools\stop_kavach.ps1`.
 
 The PowerShell launchers are the supported release path. Docker remains experimental and unsupported; see the README for its limitations.
 
@@ -25,7 +25,7 @@ File scanning accepts TXT/PDF only, with a 5 MiB file cap, 5 MiB + 64 KiB multip
 
 The Chrome extension does not run backend Presidio detection. Its 1,557-case parity result covers native Python/JavaScript detection only; selected deterministic global rules have separate regression tests. Detection accuracy is not guaranteed.
 
-Chrome extension installation was blocked on the review machine because Developer mode is administrator-managed. The extension package checks and automated policy/privacy and detector-parity checks passed, but installed-extension Mask/Warn/Block behavior remains unverified in Chrome. Do not describe those installed behaviors as release-validated.
+User-reported manual functional tests passed for EMAIL Mask, Warn and Block on ChatGPT, Claude and Gemini; EMAIL Block persisted after reloading the extension; and a synthetic PAN was masked on ChatGPT. These results cover the listed cases and are not an independent security audit or a guarantee for every identifier or site state. Automated package, policy/privacy, detector-parity, syntax and manifest checks passed. Developer Mode was administrator-restricted on the review machine, so installation was not verified on that machine; this does not negate the recorded manual functional tests.
 
 ## Project components
 

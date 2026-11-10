@@ -7,6 +7,7 @@ authoritative; the model cannot access arbitrary files or run shell code.
 
 import json
 import re
+import time
 
 import httpx
 
@@ -207,11 +208,26 @@ class PrivacyToolRuntime:
         self._masked_text = None
         self._partial_mask_spans = []
         self._verification = None
+        self._detection_performance = {
+            "native_detection_ms": 0.0,
+            "presidio_initialization_ms": 0.0,
+            "presidio_detection_ms": 0.0,
+            "global_detection_ms": 0.0,
+        }
         self._remask_rounds = 0
         self._review_reasons = []
         self.tool_calls = []
         self.steps = []
         self.last_observation = {"state": "not_started"}
+
+    def _record_detection_performance(self, result):
+        performance = result.get("performance", {})
+        if not isinstance(performance, dict):
+            return
+        for key in self._detection_performance:
+            value = performance.get(key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                self._detection_performance[key] += max(0.0, value)
 
     @property
     def verification_passed(self):
@@ -406,6 +422,7 @@ class PrivacyToolRuntime:
             result = analyze_global(self._original_text, self._mode)
             if not isinstance(result, dict):
                 raise ToolExecutionError("invalid_scan_result")
+            self._record_detection_performance(result)
 
             masked_text = result.get("masked_text")
             if not isinstance(masked_text, str):
@@ -445,6 +462,7 @@ class PrivacyToolRuntime:
             result = analyze_global(verification_input, "label")
             if not isinstance(result, dict):
                 raise ToolExecutionError("invalid_verification_result")
+            self._record_detection_performance(result)
 
             self._verification = {
                 **result,
@@ -594,6 +612,10 @@ class PrivacyToolRuntime:
             },
             "requires_human_review": self.requires_human_review,
             "steps": steps,
+            "performance": {
+                key: round(value, 2)
+                for key, value in self._detection_performance.items()
+            },
         }
 
 
@@ -689,17 +711,27 @@ def run_autonomous_privacy_agent(text, mode="label", enabled=None, planner=None)
     `planner` is injectable for tests. Production uses the configured Ollama model.
     """
     use_agent = AGENT_ENABLED if enabled is None else bool(enabled)
+    workflow_started = time.perf_counter()
     runtime = PrivacyToolRuntime(text, mode)
     agent_status = "ok" if use_agent else "disabled"
     fallback_used = not use_agent
     agent_failure_reason = None
+    ollama_review_ms = None
 
     if use_agent:
         planner_failed = None
 
         for _ in range(MAX_TOOL_CALLS):
             try:
-                action = planner(runtime) if planner is not None else _ask_model(runtime)
+                if planner is not None:
+                    action = planner(runtime)
+                else:
+                    ollama_started = time.perf_counter()
+                    try:
+                        action = _ask_model(runtime)
+                    finally:
+                        elapsed_ms = (time.perf_counter() - ollama_started) * 1000
+                        ollama_review_ms = (ollama_review_ms or 0.0) + elapsed_ms
 
                 if (
                     not isinstance(action, dict)
@@ -767,6 +799,15 @@ def run_autonomous_privacy_agent(text, mode="label", enabled=None, planner=None)
         agent_status = "ok"
 
     result = runtime.result(agent_status, fallback_used)
+    result["performance"]["ollama_review_ms"] = (
+        round(ollama_review_ms, 2)
+        if ollama_review_ms is not None
+        else None
+    )
+    result["performance"]["agent_workflow_ms"] = round(
+        (time.perf_counter() - workflow_started) * 1000,
+        2,
+    )
     if agent_failure_reason:
         result["agent_review"]["reason"] = agent_failure_reason
 

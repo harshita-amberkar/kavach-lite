@@ -1,0 +1,21 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">KAVACH shield and orbit logo</title>
+  <desc id="desc">A navy shield marked with a cyan K, encircled by cyan and violet orbit rings.</desc>
+  <defs>
+    <linearGradient id="shieldEdge" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse"><stop stop-color="#73f1f2"/><stop offset=".52" stop-color="#438dff"/><stop offset="1" stop-color="#bd83ff"/></linearGradient>
+    <linearGradient id="shieldFill" x1="18" y1="11" x2="45" y2="54" gradientUnits="userSpaceOnUse"><stop stop-color="#122b51"/><stop offset="1" stop-color="#080f24"/></linearGradient>
+    <linearGradient id="kStroke" x1="23" y1="22" x2="42" y2="42" gradientUnits="userSpaceOnUse"><stop stop-color="#75f5ef"/><stop offset=".55" stop-color="#55baff"/><stop offset="1" stop-color="#c29aff"/></linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g class="orbit orbit-cyan"><ellipse cx="32" cy="32" rx="28" ry="13" transform="rotate(-31 32 32)" fill="none" stroke="#54def2" stroke-width="1.7" stroke-dasharray="74 15 25 62" opacity=".88"/></g>
+  <g class="orbit orbit-violet"><ellipse cx="32" cy="32" rx="24" ry="16" transform="rotate(28 32 32)" fill="none" stroke="#b987ff" stroke-width="1.4" stroke-dasharray="54 18 30 52" opacity=".82"/></g>
+  <path d="M32 7.5 47.5 14v13.8c0 10.8-6.3 20-15.5 25.2-9.2-5.2-15.5-14.4-15.5-25.2V14L32 7.5Z" fill="url(#shieldFill)" stroke="url(#shieldEdge)" stroke-width="2.1" filter="url(#glow)"/>
+  <path d="M25 21v22m0-11 14-11M29 30l11 13" fill="none" stroke="url(#kStroke)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="7" cy="36" r="1.4" fill="#61e9f2"/><circle cx="56" cy="26" r="1.3" fill="#c195ff"/>
+  <style>
+    .orbit { transform-box: view-box; transform-origin: 32px 32px; animation: orbit-turn 28s linear infinite; }
+    .orbit-violet { animation-duration: 36s; animation-direction: reverse; }
+    @keyframes orbit-turn { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .orbit { animation: none; } }
+  </style>
+</svg>

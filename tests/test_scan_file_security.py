@@ -23,8 +23,11 @@ def make_pdf(page_count=1, password=None):
 
 class ScanFileSecurityTests(unittest.TestCase):
     def setUp(self):
-        self.client = TestClient(app, base_url="http://127.0.0.1")
-        self.auth = {"X-KAVACH-Token": app.state.api_token}
+        self.client = TestClient(
+            app,
+            base_url="http://127.0.0.1",
+            client=("127.0.0.1", 50000),
+        )
 
     def tearDown(self):
         self.client.close()
@@ -32,7 +35,6 @@ class ScanFileSecurityTests(unittest.TestCase):
     def upload(self, filename, content):
         return self.client.post(
             "/api/scan-file",
-            headers=self.auth,
             files={"file": (filename, content)},
         )
 
@@ -48,7 +50,7 @@ class ScanFileSecurityTests(unittest.TestCase):
         ).encode()
         response = self.client.post(
             "/api/scan-file",
-            headers={**self.auth, "Content-Type": f"multipart/form-data; boundary={boundary}"},
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
             content=body,
         )
         self.assertEqual(response.status_code, 413)
@@ -83,6 +85,11 @@ class ScanFileSecurityTests(unittest.TestCase):
         self.assertEqual(response.json()["page_count"], 1)
         self.assertIn("masked_text", response.json())
         self.assertIn("findings", response.json())
+        performance = response.json()["performance"]
+        self.assertGreaterEqual(performance["native_detection_ms"], 0)
+        self.assertGreaterEqual(performance["presidio_detection_ms"], 0)
+        self.assertGreaterEqual(performance["global_detection_ms"], 0)
+        self.assertGreaterEqual(performance["total_backend_processing_ms"], 0)
 
     def test_upload_is_closed_after_success(self):
         original_close = StarletteUploadFile.close

@@ -8,15 +8,10 @@ import app as kavach_app
 
 class AgenticEndpointTests(unittest.TestCase):
     def setUp(self):
-        self.token = kavach_app.app.state.api_token
-        self.headers = {"X-KAVACH-Token": self.token}
         self.prompt = "Contact demo@example.com for support."
 
-    def _runtime_result(self):
+    def _core_result(self):
         return {
-            "workflow": "KAVACH Autonomous Privacy Workflow",
-            "status": "completed",
-            "agent_enabled": True,
             "findings": [{
                 "type": "EMAIL",
                 "start": 8,
@@ -26,43 +21,37 @@ class AgenticEndpointTests(unittest.TestCase):
             "masked_text": "Contact [EMAIL] for support.",
             "risk": {"score": 8, "level": "low"},
             "global_detection": {"status": "ok"},
-            "agent_review": {"status": "ok", "reviews": []},
-            "agent_execution": {
-                "status": "completed",
-                "tool_calls": ["scan_prompt", "verify_masked_output"],
-                "fallback_used": False,
-                "review_reason_codes": [],
-            },
-            "verification": {
-                "status": "passed",
-                "remaining_supported_findings": 0,
-            },
-            "requires_human_review": False,
-            "steps": [{
-                "name": "global_scan",
-                "status": "completed",
-                "findings_count": 1,
-            }],
+            "performance": {"native_detection_ms": 1.2},
         }
 
-    def test_agentic_scan_runs_runtime_and_returns_masked_result(self):
+    def test_agentic_scan_returns_shared_core_and_real_analyst_review(self):
+        review = {
+            "status": "ok",
+            "reviews": [{
+                "id": 0,
+                "assessment": "likely",
+                "reason": "The detector candidate is an email address.",
+            }],
+        }
         with (
             patch(
-                "kavach.agentic.run_autonomous_privacy_agent",
-                return_value=self._runtime_result(),
-            ) as runtime,
+                "app.analyze_global",
+                return_value=self._core_result(),
+            ) as analyze_global,
+            patch("app.AGENT_ENABLED", True),
+            patch("app.review_findings", return_value=review) as review_findings,
             patch(
-                "kavach.agentic.record_run",
+                "app.record_run",
                 return_value=321,
             ) as record_run,
             TestClient(
                 kavach_app.app,
                 base_url="http://127.0.0.1",
+                client=("127.0.0.1", 50000),
             ) as client,
         ):
             response = client.post(
                 "/api/agentic/scan",
-                headers=self.headers,
                 json={"text": self.prompt, "mode": "label"},
             )
 
@@ -73,12 +62,18 @@ class AgenticEndpointTests(unittest.TestCase):
             data["masked_text"],
             "Contact [EMAIL] for support.",
         )
-        self.assertEqual(data["verification"]["status"], "passed")
+        self.assertEqual(data["agent_review"], review)
+        self.assertEqual(data["verification"]["status"], "not_run")
+        self.assertEqual(data["agent_execution"]["tool_calls"], [])
         self.assertEqual(data["audit"]["status"], "saved")
         self.assertEqual(data["audit"]["run_id"], 321)
+        performance = data["performance"]
+        self.assertGreaterEqual(performance["total_backend_processing_ms"], 0)
+        self.assertGreaterEqual(performance["audit_write_ms"], 0)
+        self.assertGreaterEqual(performance["ollama_review_ms"], 0)
 
-        runtime.assert_called_once()
-        self.assertEqual(runtime.call_args.args[0], self.prompt)
+        analyze_global.assert_called_once_with(self.prompt, "label")
+        review_findings.assert_called_once()
         record_run.assert_called_once()
 
         audit_arguments = record_run.call_args.kwargs
@@ -89,15 +84,17 @@ class AgenticEndpointTests(unittest.TestCase):
             "global_privacy_workflow",
         )
 
-    def test_agentic_scan_rejects_missing_token(self):
-        with TestClient(
-            kavach_app.app,
-            base_url="http://127.0.0.1",
-        ) as client:
-            response = client.post(
-                "/api/agentic/scan",
-                json={"text": self.prompt, "mode": "label"},
-            )
+    def test_agentic_scan_requires_token_in_explicit_token_mode(self):
+        with patch.object(kavach_app.app.state, "owner_access_mode", "token"):
+            with TestClient(
+                kavach_app.app,
+                base_url="http://127.0.0.1",
+                client=("127.0.0.1", 50000),
+            ) as client:
+                response = client.post(
+                    "/api/agentic/scan",
+                    json={"text": self.prompt, "mode": "label"},
+                )
 
         self.assertEqual(response.status_code, 401)
 
@@ -120,11 +117,11 @@ class AgenticEndpointTests(unittest.TestCase):
             TestClient(
                 kavach_app.app,
                 base_url="http://127.0.0.1",
+                client=("127.0.0.1", 50000),
             ) as client,
         ):
             response = client.get(
                 "/api/agentic/history?limit=3",
-                headers=self.headers,
             )
 
         self.assertEqual(response.status_code, 200, response.text)

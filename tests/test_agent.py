@@ -110,6 +110,34 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(candidates[0]["context"], "[REDACTED]")
 
     @patch("kavach.agent.httpx.post")
+    def test_review_returns_bounded_model_concerns_and_recommendations(self, mock_post):
+        mock_post.return_value.json.return_value = {
+            "response": json.dumps({
+                "reviews": [{
+                    "id": 0,
+                    "assessment": "likely",
+                    "reason": "Candidate type is email.",
+                    "privacy_concerns": ["Personal contact information."],
+                    "recommendations": ["Review the masked message before sharing."],
+                }]
+            })
+        }
+        mock_post.return_value.raise_for_status.return_value = None
+
+        with patch.object(agent, "AGENT_ENABLED", True):
+            result = agent.review_findings(self.text, self.findings)
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(
+            result["reviews"][0]["privacy_concerns"],
+            ["Personal contact information."],
+        )
+        self.assertEqual(
+            result["reviews"][0]["recommendations"],
+            ["Review the masked message before sharing."],
+        )
+
+    @patch("kavach.agent.httpx.post")
     def test_invalid_model_json_fails_safely(self, mock_post):
         mock_post.return_value.json.return_value = {
             "response": "not valid json"

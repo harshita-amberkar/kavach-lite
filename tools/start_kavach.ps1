@@ -6,6 +6,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$env:KAVACH_OWNER_ACCESS_MODE = "local"
 $Python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 $EnvFile = Join-Path $ProjectRoot ".env"
 $DataDir = Join-Path $ProjectRoot "data"
@@ -43,9 +44,18 @@ foreach ($line in Get-Content -LiteralPath $EnvFile) {
     [Environment]::SetEnvironmentVariable($key, $value, "Process")
 }
 
-if ([string]::IsNullOrWhiteSpace($env:KAVACH_API_TOKEN) -or
-    $env:KAVACH_API_TOKEN.Length -lt 40) {
-    throw "KAVACH_API_TOKEN is missing or too short."
+if ([string]::IsNullOrWhiteSpace($env:KAVACH_OWNER_ACCESS_MODE)) {
+    $env:KAVACH_OWNER_ACCESS_MODE = "local"
+}
+$env:KAVACH_OWNER_ACCESS_MODE = $env:KAVACH_OWNER_ACCESS_MODE.Trim().ToLowerInvariant()
+if ($env:KAVACH_OWNER_ACCESS_MODE -notin @("local", "token")) {
+    throw "KAVACH_OWNER_ACCESS_MODE must be 'local' or 'token'."
+}
+
+if ($env:KAVACH_OWNER_ACCESS_MODE -eq "token" -and
+    ([string]::IsNullOrWhiteSpace($env:KAVACH_API_TOKEN) -or
+    $env:KAVACH_API_TOKEN.Length -lt 40)) {
+    throw "KAVACH_API_TOKEN must contain at least 40 characters in token mode."
 }
 if ([string]::IsNullOrWhiteSpace($env:KAVACH_DB_PATH)) {
     throw "KAVACH_DB_PATH is missing."
@@ -88,7 +98,7 @@ if (Test-Path -LiteralPath $PidFile) {
     Remove-Item -LiteralPath $PidFile -Force
 }
 
-$arguments = "-m uvicorn app:app --host 127.0.0.1 --port $Port"
+$arguments = "-m uvicorn app:app --host 127.0.0.1 --no-proxy-headers --port $Port"
 
 $server = Start-Process `
     -FilePath $Python `
@@ -102,7 +112,7 @@ $server = Start-Process `
 Set-Content -LiteralPath $PidFile -Value $server.Id -Encoding ascii
 
 $dashboardUrl = "http://127.0.0.1:$Port/"
-$healthUrl = "http://127.0.0.1:$Port/api/health"
+$healthUrl = "http://127.0.0.1:$Port/healthz"
 $ready = $false
 
 for ($attempt = 1; $attempt -le 40; $attempt++) {
@@ -138,13 +148,11 @@ Write-Host ""
 Write-Host "KAVACH started successfully." -ForegroundColor Green
 Write-Host "Backend health: OK"
 Write-Host "Dashboard: $dashboardUrl"
-try {
-    Set-Clipboard -Value $env:KAVACH_API_TOKEN
-    Write-Host "API token copied to clipboard (value hidden)."
-    Write-Host "Paste it into the dashboard prompt using Ctrl+V."
+if ($env:KAVACH_OWNER_ACCESS_MODE -eq "local") {
+    Write-Host "Owner dashboard access: loopback only; no access code is needed."
 }
-catch {
-    Write-Warning "Clipboard copy unavailable. Dashboard will still request the configured token."
+else {
+    Write-Host "Owner dashboard access: API token required."
 }
 Write-Host "Database: configured and initialized"
 Write-Host "Server PID: $($server.Id)"

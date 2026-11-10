@@ -5,7 +5,8 @@ recognizers, contextual rules, and high-priority secret detection.
 """
 
 import re
-from functools import lru_cache
+import threading
+import time
 
 from presidio_analyzer import AnalyzerEngine
 
@@ -215,22 +216,40 @@ _SECRET_RULES = [
 ]
 
 
-@lru_cache(maxsize=1)
+_ANALYZER_CACHE = None
+_ANALYZER_LOCK = threading.Lock()
+
+
 def _get_analyzer():
     """Initialize Presidio once and return supported English entities."""
-    analyzer = AnalyzerEngine()
+    global _ANALYZER_CACHE
 
-    supported = set(
-        analyzer.get_supported_entities(language="en")
-    )
+    if _ANALYZER_CACHE is not None:
+        return _ANALYZER_CACHE
 
-    entities = tuple(
-        entity
-        for entity in _ENTITY_MAP
-        if entity in supported
-    )
+    with _ANALYZER_LOCK:
+        if _ANALYZER_CACHE is None:
+            analyzer = AnalyzerEngine()
 
-    return analyzer, entities
+            supported = set(
+                analyzer.get_supported_entities(language="en")
+            )
+
+            entities = tuple(
+                entity
+                for entity in _ENTITY_MAP
+                if entity in supported
+            )
+            _ANALYZER_CACHE = (analyzer, entities)
+
+    return _ANALYZER_CACHE
+
+
+def preload_analyzer() -> float:
+    """Initialize the shared Presidio analyzer and return elapsed milliseconds."""
+    started = time.perf_counter()
+    _get_analyzer()
+    return (time.perf_counter() - started) * 1000
 
 
 def _serialize(findings):
@@ -354,6 +373,7 @@ def _detect_special_secrets(text: str) -> list[Finding]:
 
 def analyze_global(text: str, mode: str = "label") -> dict:
     """Run KAVACH, global recognizers, and contextual secret rules."""
+    pipeline_started = time.perf_counter()
 
     # 1. Detect complete secrets and explicitly labelled US SSNs.
     secret_findings = _detect_special_secrets(text)
@@ -389,7 +409,9 @@ def analyze_global(text: str, mode: str = "label") -> dict:
     # over overlapping generic phone detections.
     priority_findings = secret_findings + ssn_findings
 
+    native_started = time.perf_counter()
     deterministic = scan(text)
+    native_detection_ms = (time.perf_counter() - native_started) * 1000
 
     combined = list(priority_findings)
     combined.extend(
@@ -409,10 +431,18 @@ def analyze_global(text: str, mode: str = "label") -> dict:
     global_status = "ok"
     global_reason = None
     enabled_entities = []
+    presidio_initialization_ms = 0.0
+    presidio_detection_ms = 0.0
 
     # 2. Run Presidio's supported global and regional recognizers.
     try:
-        analyzer, entities = _get_analyzer()
+        initialization_started = time.perf_counter()
+        try:
+            analyzer, entities = _get_analyzer()
+        finally:
+            presidio_initialization_ms = (
+                time.perf_counter() - initialization_started
+            ) * 1000
         enabled_entities = list(entities)
 
         if not entities:
@@ -420,11 +450,15 @@ def analyze_global(text: str, mode: str = "label") -> dict:
                 "No configured global entities are available"
             )
 
+        presidio_started = time.perf_counter()
         results = analyzer.analyze(
             text=text,
             language="en",
             entities=list(entities),
         )
+        presidio_detection_ms = (
+            time.perf_counter() - presidio_started
+        ) * 1000
 
         # Prefer higher-scoring, longer candidates.
         for result in sorted(
@@ -539,10 +573,24 @@ def analyze_global(text: str, mode: str = "label") -> dict:
             )
 
     # 4. Generate protected output and risk assessment.
+    serialized_findings = _serialize(combined)
+    masked_text = mask(text, combined, mode)
+    risk_data = risk(combined)
+    performance = {
+        "native_detection_ms": round(native_detection_ms, 2),
+        "presidio_initialization_ms": round(presidio_initialization_ms, 2),
+        "presidio_detection_ms": round(presidio_detection_ms, 2),
+        "global_detection_ms": round(
+            (time.perf_counter() - pipeline_started) * 1000,
+            2,
+        ),
+    }
+
     return {
-        "findings": _serialize(combined),
-        "masked_text": mask(text, combined, mode),
-        "risk": risk(combined),
+        "findings": serialized_findings,
+        "masked_text": masked_text,
+        "risk": risk_data,
+        "performance": performance,
         "global_detection": {
             "status": global_status,
             "engine": "KAVACH + Presidio + contextual rules",

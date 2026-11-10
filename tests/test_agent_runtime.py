@@ -218,6 +218,18 @@ class AutonomousAgentRuntimeTests(unittest.TestCase):
 
         self.assertEqual(result["agent_review"]["status"], "ok")
         self.assertEqual(result["status"], "completed")
+        self.assertGreaterEqual(
+            result["performance"]["ollama_review_ms"],
+            0,
+        )
+        self.assertGreaterEqual(
+            result["performance"]["global_detection_ms"],
+            0,
+        )
+        self.assertGreaterEqual(
+            result["performance"]["agent_workflow_ms"],
+            result["performance"]["ollama_review_ms"],
+        )
         self.assertEqual(ollama.call_count, 3)
         for call in ollama.call_args_list:
             self.assertIs(call.kwargs["trust_env"], False)

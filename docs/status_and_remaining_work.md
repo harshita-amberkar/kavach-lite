@@ -42,11 +42,11 @@ These results apply to that checkout and test run. Rerun the preflight after sub
 ## Remaining before final submission
 
 1. **Proxy end-to-end regression: COMPLETED.** All six proxy tests passed: email masking, mocked global finding, real contextual finding, bearer-secret masking, high-risk blocking before forwarding, and contextual fallback when Presidio is unavailable.
-2. **Documentation and privacy wording: UPDATED.** README, demo runbook, extension options page and manifest now distinguish local browser scanning, Chrome Sync policy storage, the destination AI provider and the separate FastAPI proxy.
+2. **Documentation and privacy wording: UPDATED.** README, extension options page and manifest distinguish local browser scanning, Chrome Sync policy storage, the destination AI provider and the separate FastAPI proxy.
 3. **Deployment/security work remains future work:** selected authentication, origin, request, header, rate-limit, privacy and upload controls are implemented and regression-tested locally. A separately designed and reviewed non-loopback/multi-instance deployment, shared rate limiting, encrypted storage, and real-provider validation are not implemented. Do not call the proxy production-ready solely because mocked tests pass.
 4. **Independent synthetic holdout: COMPLETED.** A separate, project-authored synthetic set was frozen by SHA-256 and evaluated without tuning. This is not a human evaluation; the abandoned participant-collection workflow was not used. See `docs/independent_synthetic_holdout.md` and `results/independent_synthetic_holdout/`.
-5. **Manual browser testing:** verify the extension on the supported AI sites and record any site-UI compatibility issues.
-6. **Submission materials:** review the final report, presentation placeholders, screenshots and demo runbook; rehearse the complete demo.
+5. **Manual browser testing: COMPLETED for selected cases.** User-reported tests passed for EMAIL Mask, Warn and Block on ChatGPT, Claude and Gemini; EMAIL Block persisted after reloading; and a synthetic PAN was detected and masked on ChatGPT. Continue checking site compatibility as supported sites change; these tests do not cover every identifier or site state.
+6. **Submission materials:** review the final report, presentation placeholders and screenshots. Any demonstration should use synthetic data.
 
 ## Evaluation limitations
 
@@ -59,7 +59,7 @@ These results apply to that checkout and test run. Rerun the preflight after sub
 ## Completion criteria
 
 - Focused proxy tests and full preflight pass on the frozen checkout.
-- README, demo runbook, privacy wording and status documents match the code.
+- README, privacy wording and status documents match the code.
 - Reviewed files are committed and `git status` is clean before independent data collection.
 - The separate synthetic holdout is generated reproducibly, hash-checked and evaluated without tuning. Human-authored participant collection is not part of this milestone.
 - Final report and presentation clearly state scope, limits, test evidence and what remains unverified.

@@ -1,8 +1,34 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from kavach.global_detector import analyze_global
+import kavach.global_detector as global_detector
+from kavach.global_detector import analyze_global, preload_analyzer
+
+
+class GlobalDetectorInitializationTests(unittest.TestCase):
+    def test_preload_initializes_one_shared_analyzer_for_concurrent_scans(self):
+        class FakeAnalyzer:
+            def get_supported_entities(self, language):
+                self.asserted_language = language
+                return ["EMAIL_ADDRESS", "PHONE_NUMBER"]
+
+        analyzer = FakeAnalyzer()
+        with (
+            patch.object(global_detector, "_ANALYZER_CACHE", None),
+            patch.object(
+                global_detector, "AnalyzerEngine", return_value=analyzer
+            ) as factory,
+        ):
+            preload_duration = preload_analyzer()
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                cached = list(pool.map(lambda _: global_detector._get_analyzer(), range(16)))
+
+        self.assertGreaterEqual(preload_duration, 0)
+        self.assertEqual(factory.call_count, 1)
+        self.assertTrue(all(item[0] is analyzer for item in cached))
+        self.assertEqual(cached[0][1], ("EMAIL_ADDRESS", "PHONE_NUMBER"))
 
 
 class GlobalDetectorContextTests(unittest.TestCase):
@@ -57,6 +83,37 @@ class GlobalDetectorContextTests(unittest.TestCase):
         text = f"Call me at {value} tomorrow."
         result = self.analyze_with_mock(text, "PHONE_NUMBER", value)
         self.assertIn("PHONE", self.detected_types(result))
+
+    def test_global_results_include_separate_detection_timings(self):
+        result = self.analyze_with_mock(
+            "Contact sample@example.com",
+            "EMAIL_ADDRESS",
+            "sample@example.com",
+        )
+
+        performance = result["performance"]
+        for field in (
+            "native_detection_ms",
+            "presidio_initialization_ms",
+            "presidio_detection_ms",
+            "global_detection_ms",
+        ):
+            self.assertIsInstance(performance[field], float)
+            self.assertGreaterEqual(performance[field], 0)
+
+    def test_analyzer_initialization_failure_keeps_deterministic_fallback(self):
+        with patch(
+            "kavach.global_detector._get_analyzer",
+            side_effect=RuntimeError("analyzer unavailable"),
+        ):
+            result = analyze_global("Contact sample@example.com")
+
+        self.assertEqual(result["global_detection"]["status"], "unavailable")
+        self.assertIn("EMAIL", self.detected_types(result))
+        self.assertGreaterEqual(
+            result["performance"]["presidio_initialization_ms"],
+            0,
+        )
 
 
 if __name__ == "__main__":

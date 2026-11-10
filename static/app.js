@@ -1,97 +1,85 @@
 // --------------------------------------------------
-// KAVACH local API authentication
+// Remote token authentication is requested only when the server requires it.
 // --------------------------------------------------
 
 const KAVACH_TOKEN_KEY = "kavachApiToken";
 
-async function getKavachApiToken() {
-  let token = sessionStorage.getItem(KAVACH_TOKEN_KEY);
-
-  if (!token) {
-    const dialog = $("token-dialog");
-    const form = $("token-form");
-    const input = $("token-input");
-    const cancel = $("token-cancel");
-    if (!dialog || !form || !input || !cancel || typeof dialog.showModal !== "function") {
-      throw new Error("KAVACH server access needs a browser that supports secure token entry.");
-    }
-
-    token = await new Promise(resolve => {
-      let settled = false;
-      const finish = value => {
-        if (settled) return;
-        settled = true;
-        form.removeEventListener("submit", submitToken);
-        dialog.removeEventListener("close", handleClose);
-        cancel.removeEventListener("click", cancelToken);
-        input.value = "";
-        resolve(value);
-      };
-      const submitToken = event => {
-        event.preventDefault();
-        const value = input.value.trim();
-        if (!value) {
-          input.focus();
-          return;
-        }
-        try {
-          sessionStorage.setItem(KAVACH_TOKEN_KEY, value);
-        } catch {
-          finish(null);
-          return;
-        }
-        finish(value);
-        dialog.close();
-      };
-      const cancelToken = () => dialog.close();
-      const handleClose = () => finish(null);
-
-      input.value = "";
-      form.addEventListener("submit", submitToken);
-      dialog.addEventListener("close", handleClose);
-      cancel.addEventListener("click", cancelToken);
-      dialog.showModal();
-      input.focus();
-    });
-
-    if (!token) {
-      throw new Error("KAVACH API token is required.");
-    }
-
-    return token;
+async function promptForKavachApiToken() {
+  const dialog = $("token-dialog");
+  const form = $("token-form");
+  const input = $("token-input");
+  const cancel = $("token-cancel");
+  if (!dialog || !form || !input || !cancel || typeof dialog.showModal !== "function") {
+    throw new Error("KAVACH server access needs a browser that supports secure token entry.");
   }
 
+  const token = await new Promise(resolve => {
+    let settled = false;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      form.removeEventListener("submit", submitToken);
+      dialog.removeEventListener("close", handleClose);
+      cancel.removeEventListener("click", cancelToken);
+      input.value = "";
+      resolve(value);
+    };
+    const submitToken = event => {
+      event.preventDefault();
+      const value = input.value.trim();
+      if (!value) {
+        input.focus();
+        return;
+      }
+      try {
+        sessionStorage.setItem(KAVACH_TOKEN_KEY, value);
+      } catch {
+        finish(null);
+        return;
+      }
+      finish(value);
+      dialog.close();
+    };
+    const cancelToken = () => dialog.close();
+    const handleClose = () => finish(null);
+
+    input.value = "";
+    form.addEventListener("submit", submitToken);
+    dialog.addEventListener("close", handleClose);
+    cancel.addEventListener("click", cancelToken);
+    dialog.showModal();
+    input.focus();
+  });
+
+  if (!token) throw new Error("KAVACH API token is required.");
   return token;
 }
 
 async function apiFetch(url, options = {}) {
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const send = async token => {
     const headers = new Headers(options.headers || {});
-    headers.set("X-KAVACH-Token", await getKavachApiToken());
+    if (token) headers.set("X-KAVACH-Token", token);
+    else headers.delete("X-KAVACH-Token");
 
-    setHeroScanning(true);
-    let response;
-    try {
-      response = await fetch(url, {
-        ...options,
-        headers,
-        signal: AbortSignal.timeout(60000)
-      });
-    } finally {
-      setHeroScanning(false);
-    }
+    return fetch(url, {
+      ...options,
+      headers,
+      signal: AbortSignal.timeout(60000)
+    });
+  };
 
-    if (response.status === 401) {
-      // A local server restart can rotate a generated session token.
-      sessionStorage.removeItem(KAVACH_TOKEN_KEY);
-      if (attempt === 1) {
-        throw new Error("Your session expired. Check your access code and try again.");
-      }
-      continue;
-    }
+  let token = sessionStorage.getItem(KAVACH_TOKEN_KEY);
+  let response = await send(token);
+  if (response.status !== 401) return response;
 
-    return response;
+  sessionStorage.removeItem(KAVACH_TOKEN_KEY);
+  token = await promptForKavachApiToken();
+  response = await send(token);
+  if (response.status === 401) {
+    sessionStorage.removeItem(KAVACH_TOKEN_KEY);
+    throw new Error("Your session expired. Check your access code and try again.");
   }
+  return response;
 }
 
 function friendlyRequestError(status, fallback) {
@@ -104,19 +92,7 @@ function friendlyRequestError(status, fallback) {
   return fallback;
 }
 
-const SAMPLES = [
-  "Customer Demo User (demo.user@example.com, +91 90000 00000) says refund of Rs 4,500 failed. Please reply. Pay them on demo@okaxis. IFSC HDFC0001234.",
-  "Bhai mera PAN ABCPE1234F hai aur आधार नंबर २३४५ ६७८९ ०१२३ hai, loan form bhar do.",
-  "const client = new S3({accessKeyId: '<AWS_ACCESS_KEY_ID_PLACEHOLDER>'});\nconst api_key = 'DEMO_API_KEY_PLACEHOLDER';\nconst password = 'DEMO_PASSWORD_PLACEHOLDER';\n// why does upload fail?"
-];
-
 const $ = id => document.getElementById(id);
-let activeScanCount = 0;
-
-function setHeroScanning(active) {
-  activeScanCount = Math.max(0, activeScanCount + (active ? 1 : -1));
-  $("hero-visual")?.classList.toggle("is-scanning", activeScanCount > 0);
-}
 
 async function refreshBackendHealth() {
   const indicator = $("backend-health");
@@ -124,28 +100,14 @@ async function refreshBackendHealth() {
   if (!indicator || !label) return;
 
   try {
-    const response = await fetch("/api/health", { cache: "no-store" });
-    const data = response.ok ? await response.json() : null;
-    const healthy = data && data.status === "ok";
-    indicator.dataset.state = healthy ? "online" : "unavailable";
-    if (!healthy) {
-      label.textContent = "KAVACH is unavailable";
-      return;
-    }
-    const databaseReady = data.database === "available";
-    const assistant = data.ollama?.status === "disabled"
-      ? "Local AI assistant optional"
-      : data.ollama?.status !== "available"
-        ? "Local AI assistant is offline"
-        : data.ollama.model_available
-          ? "Local AI assistant ready"
-          : "Local AI assistant needs setup";
-    indicator.dataset.state = databaseReady ? "online" : "warning";
-    label.textContent = `${databaseReady ? "KAVACH ready · Secure storage ready" : "Secure storage unavailable"} · ${assistant}`;
+    const response = await apiFetch("/api/health", { cache: "no-store" });
+    if (!response.ok) throw new Error("Health request failed.");
+    const data = await response.json();
+    label.textContent = data && data.status === "ok" ? "ready" : "unavailable";
   } catch {
-    indicator.dataset.state = "unavailable";
-    label.textContent = "KAVACH is unavailable";
+    label.textContent = "unavailable";
   }
+  indicator.hidden = false;
 }
 
 refreshBackendHealth();
@@ -155,14 +117,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const navLinks = Array.from(document.querySelectorAll(".nav-link[href^='#']"));
   const sections = navLinks.map(link => document.querySelector(link.getAttribute("href"))).filter(Boolean);
   if (!("IntersectionObserver" in window)) return;
+  const sectionLabels = {
+    scan: "Protect",
+    security: "Settings",
+    help: "Help & Extensions"
+  };
   const observer = new IntersectionObserver(entries => {
     const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
     if (!visible) return;
     navLinks.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${visible.target.id}`));
     const breadcrumb = document.querySelector(".breadcrumbs strong");
-    if (breadcrumb) breadcrumb.textContent = visible.target.id === "scan"
-      ? "Protect"
-      : visible.target.id === "security" ? "Settings" : "Help & Extensions";
+    if (breadcrumb) breadcrumb.textContent =
+      sectionLabels[visible.target.id] || "Protect";
   }, { rootMargin: "-18% 0px -65% 0px", threshold: [0, 0.15, 0.35] });
   sections.forEach(section => observer.observe(section));
 });
@@ -253,14 +219,13 @@ function initializeDashboardSettings() {
 
 initializeDashboardSettings();
 
-
 // ------------------------------------------------------------
 // Prompt protection: one deliberate action for both protection modes
 // ------------------------------------------------------------
 
 function showPromptPlaceholder() {
   $("out").textContent =
-    "Your protected copy will appear here after checking.";
+    "Your protected message will appear here after scanning.";
   $("out").className = "out empty";
 }
 
@@ -332,24 +297,46 @@ function renderPromptRows(findings) {
     const content = document.createElement("div");
     content.className = "finding-card-content";
     const title = document.createElement("strong");
-    title.textContent = friendlyFindingLabel(finding.type);
+    title.textContent = `${friendlyFindingLabel(finding.type)} detected.`;
     content.append(title);
     card.append(icon, content);
     rows.appendChild(card);
   });
 }
 
-function resetPromptResults(message = "Your text has not been protected yet.") {
+function setResultState(message, state) {
+  const resultState = $("result-state");
+  resultState.textContent = message;
+  resultState.className = `result-state ${state}`;
+  resultState.hidden = !message;
+}
+
+function resetPromptResults(
+  message = "Your results will appear here after scanning.",
+  state = "empty"
+) {
   showPromptPlaceholder();
   const resultPanel = document.querySelector(".result-panel");
+  document.querySelector(".scanner-grid")?.classList.remove("has-result");
   resultPanel?.classList.remove("has-result");
   resultPanel?.removeAttribute("data-risk");
+  setResultState(message, state);
   renderPromptRows([]);
   $("copy-protected").disabled = true;
   $("protection-status").textContent = message;
   $("protection-summary").hidden = true;
+  $("protection-summary-risk").hidden = true;
+  const aiReview = $("ai-review");
+  if (aiReview) aiReview.hidden = true;
+  $("ai-review-content")?.replaceChildren();
+  $("ai-review-state").textContent = "";
+  $("ai-review-badge").textContent = "Not run";
+  $("ai-review-badge").className = "ai-review-badge";
+  document.querySelector(".masked-state-tag").hidden = true;
+  $("copy-feedback").textContent = "";
+  document.querySelector(".findings-details").open = false;
   const findingsSummary = document.querySelector(".findings-details summary");
-  if (findingsSummary) findingsSummary.textContent = "View what was found";
+  if (findingsSummary) findingsSummary.textContent = "See detected information";
 }
 
 function renderProtectionResult(data) {
@@ -359,90 +346,189 @@ function renderProtectionResult(data) {
   const maskedText = typeof data.masked_text === "string"
     ? data.masked_text
     : "";
+  const outputAvailable = Boolean(maskedText.trim()) &&
+    !(findings.length > 0 && maskedText === $("inp").value);
 
-  renderMaskedPrompt(maskedText);
+  renderMaskedPrompt(outputAvailable ? maskedText : "");
 
   const resultPanel = document.querySelector(".result-panel");
+  document.querySelector(".scanner-grid")?.classList.add("has-result");
   resultPanel?.classList.add("has-result");
   resultPanel?.removeAttribute("data-risk");
+  setResultState("", "empty");
 
   renderPromptRows(findings);
-  $("copy-protected").disabled = !maskedText;
+  $("copy-protected").disabled = !outputAvailable;
 
   const findingsSummary =
     document.querySelector(".findings-details summary");
   if (findingsSummary) {
-    findingsSummary.textContent = `View what was found (${findings.length})`;
+    findingsSummary.textContent = `See detected information (${findings.length})`;
   }
 
   $("copy-feedback") &&
     ($("copy-feedback").textContent = "");
 }
 
-function renderProtectionSummary(data, mode) {
+function renderProtectionSummary(data) {
   const findings = Array.isArray(data.findings) ? data.findings : [];
-  const autonomous = mode === "autonomous";
-  const verification = data.verification && typeof data.verification === "object"
-    ? String(data.verification.status || "").toLowerCase()
-    : "not_reported";
-  const needsReview = autonomous && (
-    verification !== "passed" || data.requires_human_review === true
-  );
+  const maskedText = typeof data.masked_text === "string" ? data.masked_text : "";
+  const outputAvailable = Boolean(maskedText.trim()) &&
+    !(findings.length > 0 && maskedText === $("inp").value);
   const globalDetection = data.global_detection && typeof data.global_detection === "object"
     ? data.global_detection
     : null;
+  const checksUnavailable = globalDetection &&
+    String(globalDetection.status || "").toLowerCase() === "unavailable";
+  const requiresHumanReview = data.requires_human_review === true;
+  const verificationStatus = data.verification &&
+    typeof data.verification === "object"
+    ? String(data.verification.status || "").toLowerCase()
+    : "not_reported";
+  const types = [...new Set(findings.map(item => friendlyFindingLabel(item.type)))];
+  const risk = data.risk && typeof data.risk === "object" ? data.risk : {};
+  const riskNode = $("protection-summary-risk");
+  const riskLevel = typeof risk.level === "string" ? risk.level.trim() : "";
+  const riskScore = typeof risk.score === "number" && Number.isFinite(risk.score)
+    ? ` (score ${risk.score})`
+    : "";
+  riskNode.textContent = riskLevel ? `Risk: ${riskLevel}${riskScore}` : "";
+  riskNode.hidden = !riskLevel;
+  const countLabel = $("protection-summary-count-label");
+  countLabel.textContent = findings.length === 1 ? "Sensitive item found" : "Sensitive items found";
+  $("protection-summary-count").textContent = String(findings.length);
 
-  let title = findings.length
-    ? "Your information is protected"
-    : "Your check is complete";
-  let message = findings.length
-    ? `Your information is protected. KAVACH found ${findings.length} sensitive item${findings.length === 1 ? "" : "s"} and prepared a copy for you to review.`
-    : "KAVACH did not find supported sensitive information. It can miss items, so review the text before sharing.";
-  let statusLabel = findings.length ? "Ready to review" : "No findings";
-  let statusKind = "neutral";
-
-  if (needsReview) {
-    title = "Please review your protected copy";
-    message = "This scan needs a careful human check. Review the findings and protected text before sharing.";
+  let title;
+  let message;
+  let statusLabel;
+  let statusKind;
+  if (!outputAvailable) {
+    title = "We couldn't prepare a protected message.";
+    message = "Do not share the original message. Try again or remove sensitive information yourself.";
+    statusLabel = "Not protected";
+    statusKind = "warning";
+  } else if (requiresHumanReview) {
+    title = "Automated protection ran; please review before sharing.";
+    message = checksUnavailable
+      ? "Automated protection ran, but some detection checks were unavailable. Review the findings and protected message before sharing."
+      : verificationStatus === "not_run"
+        ? "Automated detection and masking ran, but verification was not performed. Review the findings and protected message before sharing."
+        : "Automated protection ran, but this result still requires human review. Review the findings and protected message before sharing.";
+    statusLabel = "Human review required";
+    statusKind = "warning";
+  } else if (checksUnavailable) {
+    title = "Please review this message before sharing.";
+    message = "Some detection checks were unavailable. Review the protected message carefully before sharing.";
     statusLabel = "Review needed";
     statusKind = "warning";
   } else if (findings.length) {
+    title = "Your message is protected.";
+    message = `We found ${findings.length} sensitive item${findings.length === 1 ? "" : "s"}. ${types.join(", ")} detected. Your protected message is ready. Please review this message before sharing.`;
+    statusLabel = "Protected";
     statusKind = "success";
-  }
-
-  if (globalDetection && String(globalDetection.status || "").toLowerCase() === "unavailable") {
-    message += " Some checks were unavailable, so review the protected text carefully.";
-    statusLabel = "Review carefully";
-    statusKind = "warning";
-  }
-
-  const review = data.agent_review && typeof data.agent_review === "object"
-    ? data.agent_review
-    : {};
-  const reviewUnavailable = String(review.status || "").toLowerCase() === "unavailable";
-  if (reviewUnavailable) {
-    message += review.reason === "timeout"
-      ? " The local AI assistant is taking too long; your scan and masking are complete."
-      : " The local AI assistant is offline; your scan and masking are complete.";
+  } else {
+    title = "Your message is protected.";
+    message = "No supported sensitive items were found. Please review this message before sharing.";
+    statusLabel = "Checked";
+    statusKind = "success";
   }
 
   $("protection-summary-title").textContent = title;
   $("protection-summary-message").textContent = message;
-  $("protection-summary-count").textContent = String(findings.length);
   const badge = $("protection-summary-status");
   badge.textContent = statusLabel;
   badge.className = `protection-summary-badge ${statusKind}`;
 
-  const agentStatus = $("agent-review-status");
-  const reviewCompleted = String(review.status || "").toLowerCase() === "ok";
-  agentStatus.hidden = !reviewCompleted;
-  if (reviewCompleted) {
-    $("agent-review-message").textContent = "An optional AI review is complete. Check the protected text yourself before sharing.";
-    $("agent-review-badge").textContent = "Completed";
-    $("agent-review-badge").className = "agent-review-badge success";
+  const protectedTag = document.querySelector(".masked-state-tag");
+  if (protectedTag) protectedTag.hidden = !outputAvailable;
+  const findingsDetails = document.querySelector(".findings-details");
+  if (findingsDetails) findingsDetails.open = findings.length > 0;
+  $("protection-summary").hidden = false;
+}
+
+function reviewFieldValues(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .filter(item => typeof item === "string" && item.trim())
+    .map(item => item.trim().slice(0, 500));
+}
+
+function appendAiReviewField(container, label, value) {
+  const values = reviewFieldValues(value);
+  if (!values.length) return;
+
+  const section = document.createElement("div");
+  section.className = "ai-review-field";
+  const heading = document.createElement("strong");
+  heading.textContent = label;
+  const list = document.createElement(values.length > 1 ? "ul" : "p");
+  values.forEach(valueText => {
+    const item = values.length > 1 ? document.createElement("li") : list;
+    item.textContent = valueText;
+    if (values.length > 1) list.appendChild(item);
+  });
+  section.append(heading, list);
+  container.appendChild(section);
+}
+
+function renderAiReview(data, mode) {
+  const section = $("ai-review");
+  const content = $("ai-review-content");
+  const state = $("ai-review-state");
+  const badge = $("ai-review-badge");
+  content.replaceChildren();
+  state.textContent = "";
+  section.hidden = mode !== "autonomous";
+  if (section.hidden) return;
+
+  const review = data.agent_review && typeof data.agent_review === "object"
+    ? data.agent_review
+    : {};
+  const status = String(review.status || "unavailable").trim().toLowerCase();
+  if (status === "no_findings") {
+    badge.textContent = "No findings to review";
+    badge.className = "ai-review-badge neutral";
+    state.textContent = "The detector returned no findings for the AI analyst to assess.";
+    return;
   }
 
-  $("protection-summary").hidden = false;
+  if (status !== "ok") {
+    badge.textContent = "AI review unavailable";
+    badge.className = "ai-review-badge unavailable";
+    state.textContent = review.reason === "timeout"
+      ? "The local AI analyst timed out. Detection and masking are unchanged."
+      : status === "disabled"
+        ? "The local AI analyst is disabled. Detection and masking are unchanged."
+        : "The local AI analyst could not complete a review. Detection and masking are unchanged.";
+    return;
+  }
+
+  badge.textContent = "Review complete";
+  badge.className = "ai-review-badge success";
+  const findings = Array.isArray(data.findings) ? data.findings : [];
+  const reviews = Array.isArray(review.reviews) ? review.reviews : [];
+  reviews.forEach(item => {
+    if (!item || typeof item !== "object") return;
+    const card = document.createElement("article");
+    card.className = "ai-review-item";
+    const finding = Number.isInteger(item.id) ? findings[item.id] : null;
+    const title = document.createElement("h5");
+    const assessment = typeof item.assessment === "string"
+      ? item.assessment.trim()
+      : "";
+    title.textContent = `${finding ? `${friendlyFindingLabel(finding.type)} · ` : ""}AI assessment${assessment ? `: ${assessment}` : ""}`;
+    card.appendChild(title);
+    appendAiReviewField(card, "Assessment detail", item.reason);
+    appendAiReviewField(card, "Privacy concerns", item.privacy_concerns ?? item.privacy_concern);
+    appendAiReviewField(card, "Recommendations", item.recommendations ?? item.recommendation);
+    content.appendChild(card);
+  });
+
+  appendAiReviewField(content, "Privacy concerns", review.privacy_concerns);
+  appendAiReviewField(content, "Recommendations", review.recommendations ?? review.recommendation);
+  if (!reviews.length && !content.childElementCount) {
+    state.textContent = "The analyst completed the review but returned no assessment details.";
+  }
 }
 
 async function copyProtectedPrompt() {
@@ -456,7 +542,7 @@ async function copyProtectedPrompt() {
   try {
     await navigator.clipboard.writeText(text);
     feedback.textContent =
-      "Protected text copied. Review it before pasting into your AI tool.";
+      "Protected message copied. Review it before sharing.";
   } catch {
     const temporary = document.createElement("textarea");
     temporary.value = text;
@@ -475,8 +561,8 @@ async function copyProtectedPrompt() {
 
     temporary.remove();
     feedback.textContent = copied
-      ? "Protected text copied. Review it before pasting into your AI tool."
-      : "Copy was blocked. Select the protected text and copy it manually.";
+      ? "Protected message copied. Review it before sharing."
+      : "Copy was blocked. Select the protected message and copy it manually.";
   }
 }
 
@@ -507,9 +593,9 @@ async function protectPrompt() {
   input.disabled = true;
   promptPanel?.classList.add("is-scanning");
   button.textContent = "Checking your text…";
-  status.textContent = "Checking your text...";
+  status.textContent = "Scanning your message...";
 
-  resetPromptResults(status.textContent);
+  resetPromptResults(status.textContent, "loading");
 
   try {
     const response = await apiFetch(endpoint, {
@@ -535,7 +621,8 @@ async function protectPrompt() {
     }
 
     renderProtectionResult(data);
-    renderProtectionSummary(data, mode);
+    renderProtectionSummary(data);
+    renderAiReview(data, mode);
 
     status.textContent = "";
   } catch (error) {
@@ -551,25 +638,23 @@ async function protectPrompt() {
           ? "Enter your access code to continue."
           : error.message
         : "KAVACH could not finish this check. Try again in a moment.";
-    resetPromptResults(message);
+    resetPromptResults(message, "error");
 
   } finally {
     button.disabled = false;
     input.disabled = false;
     promptPanel?.classList.remove("is-scanning");
-    button.textContent = "Check & Protect";
+    button.textContent = "Scan message";
   }
 }
 
 $("inp").addEventListener("input", () => {
-  resetPromptResults("Text changed. Select Check & Protect to continue.");
+  resetPromptResults("Message changed. Scan again to update your result.");
 });
 
-document.querySelectorAll("[data-s]").forEach(button => {
-  button.addEventListener("click", () => {
-    $("inp").value = SAMPLES[Number(button.dataset.s)];
-    resetPromptResults("Sample loaded. Select Check & Protect to continue.");
-    $("inp").focus();
+document.querySelectorAll('input[name="protection-mode"]').forEach(option => {
+  option.addEventListener("change", () => {
+    resetPromptResults("Mode changed. Scan again to update your result.");
   });
 });
 
@@ -760,8 +845,15 @@ $("file-form").addEventListener("submit", async event => {
       ));
     }
 
+    if (typeof data.masked_text !== "string" || !data.masked_text.trim()) {
+      throw new Error("A protected copy could not be prepared. Do not share the original document.");
+    }
+
     const findings = Array.isArray(data.findings) ? data.findings : [];
-    $("file-count").textContent = `Sensitive items found: ${Number(data.count ?? findings.length)}`;
+    const count = Number(data.count ?? findings.length);
+    $("file-count").textContent = count === 1
+      ? "We found 1 sensitive item."
+      : `We found ${count} sensitive items.`;
 
     const findingsBox = $("file-findings");
     findingsBox.replaceChildren();
@@ -782,7 +874,7 @@ $("file-form").addEventListener("submit", async event => {
 
         const type = document.createElement("strong");
         type.className = "finding-type";
-        type.textContent = friendlyFindingLabel(finding.type);
+        type.textContent = `${friendlyFindingLabel(finding.type)} detected.`;
         heading.appendChild(type);
 
         item.appendChild(heading);
@@ -817,6 +909,7 @@ $("file-form").addEventListener("submit", async event => {
       "This PDF is password protected. Choose an unlocked copy.",
       "This PDF has more than 20 pages. Choose a shorter document.",
       "No readable text was found. Scanned-image PDFs are not supported.",
+      "A protected copy could not be prepared. Do not share the original document.",
       "This is larger than KAVACH can check. Choose a smaller file or shorten your text.",
       "Too many checks in a short time. Wait a minute, then try again.",
       "Your session expired. Check your access code and try again.",

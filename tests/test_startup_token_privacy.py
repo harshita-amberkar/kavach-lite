@@ -20,6 +20,7 @@ class StartupTokenPrivacyTests(unittest.TestCase):
                 kavach_app, "validate_upstream_url",
                 return_value="https://api.openai.com/v1",
             ),
+            patch.object(kavach_app, "preload_analyzer", return_value=2.5),
             patch.object(kavach_app.logger, "warning") as mock_warning,
             patch.object(kavach_app.logger, "info") as mock_info,
         ):
@@ -30,6 +31,26 @@ class StartupTokenPrivacyTests(unittest.TestCase):
 
         self.assertNotIn(test_token, logged_text)
         self.assertTrue(mock_warning.called)
+
+    def test_analyzer_preload_failure_does_not_abort_startup(self):
+        with (
+            patch.object(kavach_app, "preload_analyzer", side_effect=RuntimeError),
+            patch.object(
+                kavach_app, "configured_upstream_hostname",
+                return_value="api.openai.com",
+            ),
+            patch.object(
+                kavach_app, "validate_upstream_url",
+                return_value="https://api.openai.com/v1",
+            ),
+            patch.object(kavach_app.logger, "warning") as mock_warning,
+            patch.object(kavach_app.logger, "info"),
+        ):
+            asyncio.run(kavach_app.report_upstream_configuration())
+
+        self.assertTrue(
+            any("preload failed" in str(call) for call in mock_warning.call_args_list)
+        )
 
 
 if __name__ == "__main__":

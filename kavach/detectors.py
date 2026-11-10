@@ -5,6 +5,7 @@ GSTIN mod-36, and card Luhn) helps reduce false positives.
 """
 
 import re
+import time
 from dataclasses import dataclass
 
 # ---------- checksums ----------
@@ -415,7 +416,9 @@ def risk(findings: list) -> dict:
 
 def analyze(text: str, mode: str = "label") -> dict:
     """Return findings, masked text, and risk assessment."""
+    detection_started = time.perf_counter()
     findings = scan(text)
+    native_detection_ms = (time.perf_counter() - detection_started) * 1000
 
     return {
         "findings": [
@@ -429,4 +432,7 @@ def analyze(text: str, mode: str = "label") -> dict:
         ],
         "masked_text": mask(text, findings, mode),
         "risk": risk(findings),
+        "performance": {
+            "native_detection_ms": round(native_detection_ms, 2),
+        },
     }

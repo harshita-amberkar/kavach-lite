@@ -14,7 +14,7 @@ AI prompts can contain personal identifiers, credentials, and other sensitive in
 - Offers label and partial masking in the dashboard and backend. Partial masking preserves the last four digits for supported Aadhaar, card and phone findings; other types use labels.
 - Provides a Chrome extension for ChatGPT, Claude and Gemini with per-type Allow, Warn, Mask and Block policy choices where exposed in Options. `AADHAAR_POSSIBLE` defaults to Warn and is not configurable in that page.
 - Scans text and supported TXT/PDF documents through the FastAPI backend. PDF scanning is text extraction, not OCR.
-- Includes a bounded, optional autonomous workflow. When enabled, a local Ollama model chooses from eligible workflow tools; Python performs the actions and deterministic scanning, masking and verification remain authoritative.
+- Provides two Protect modes: Standard runs deterministic detection, risk assessment and masking; Autonomous runs the same protection and adds a separate advisory AI privacy review using local Ollama when enabled. The dashboard endpoint does not perform model-selected tool planning or Python post-scan verification, and AI findings cannot change deterministic results or masking.
 - Provides an OpenAI-compatible chat-completions proxy route that scans and masks message content before forwarding it to the configured upstream. Use of a remote upstream means that route is not fully local.
 - Stores autonomous workflow audit metadata in SQLite, with 30-day retention by default.
 - Includes synthetic evaluation datasets, regression tests and Python/JavaScript detector parity checks.
@@ -41,7 +41,7 @@ flowchart LR
   A --> N[Native KAVACH detector]
   A --> G[Global detector: KAVACH rules + Presidio]
   A --> F[TXT/PDF text extraction]
-  A --> W[Bounded agent workflow]
+  A --> W[Optional advisory AI privacy review]
   W --> O[Optional loopback Ollama]
   A --> DB[(SQLite audit metadata)]
   A --> P[Masked response]
@@ -76,7 +76,7 @@ The supported launcher requires Windows PowerShell, Python, and a local `.env` f
    .\.venv\Scripts\python.exe -m pip install -r requirements.txt
    ```
 
-2. Create a private `.env` containing `KAVACH_API_TOKEN`, `KAVACH_DB_PATH`, and `KAVACH_ALLOWED_HOSTS`. You can copy `.env.example`, replace its placeholder with a randomly generated token of at least 40 characters, and keep the file local. The launcher also requires the allowed hosts to include `127.0.0.1` and `localhost`. **Never commit `.env` or paste its token into a command, screenshot, or log.**
+2. Create a private `.env` containing `KAVACH_DB_PATH` and `KAVACH_ALLOWED_HOSTS`; `.env.example` provides local defaults. The launcher requires allowed hosts to include `127.0.0.1` and `localhost`. The current single-user setup uses `KAVACH_OWNER_ACCESS_MODE=local` and does not require an API token. **Never commit `.env` or place credentials in screenshots or logs.**
 
    The launcher reads unquoted `KEY=value` lines. The generated database path can be `data/kavach.db`; KAVACH initializes the SQLite schema on startup.
 
@@ -92,7 +92,7 @@ The supported launcher requires Windows PowerShell, Python, and a local `.env` f
    .\tools\start_kavach.ps1 -Port 8001
    ```
 
-   The launcher checks local health, copies the configured token to the clipboard without displaying it, and opens the dashboard. Paste that token when prompted. The default address is `http://127.0.0.1:8000`.
+   The launcher binds to `127.0.0.1`, disables forwarded-header processing, checks local health, and opens the dashboard. Owner dashboard sections work without an access-code prompt. The default address is `http://127.0.0.1:8000`.
 
 4. Stop only the KAVACH process started by the launcher:
 
@@ -100,7 +100,11 @@ The supported launcher requires Windows PowerShell, Python, and a local `.env` f
    .\tools\stop_kavach.ps1
    ```
 
-The `Start KAVACH.bat` and `Stop KAVACH.bat` files wrap these scripts. The server binds to loopback. `GET /api/health` is public for local readiness; protected API routes require the `X-KAVACH-Token` header.
+The `Start KAVACH.bat` and `Stop KAVACH.bat` files wrap these scripts. The Windows launcher binds to loopback, and the server independently rejects owner API requests whose direct peer address is not loopback; forwarding headers are not used for this decision. `GET /healthz` is the only unauthenticated health route. The full owner dashboard is served at `/`.
+
+At application startup, KAVACH initializes and caches one shared Presidio/spaCy analyzer so its model-load cost is paid before the first scan. This can lengthen startup; if initialization fails, global scanning retains its existing deterministic fallback. Backend scan API responses include applicable detector and processing timings; Autonomous responses also include optional Ollama review and audit-write timings. The dashboard does not display performance timings. Detector components overlap with the global-pipeline duration and should not be added together.
+
+The default `KAVACH_OWNER_ACCESS_MODE=local` is intended only for the current single-user laptop setup and requires no API token. A future remote deployment must explicitly set `KAVACH_OWNER_ACCESS_MODE=token` and configure a private random `KAVACH_API_TOKEN` of at least 40 characters; the server fails to start if token mode lacks that token. Do not expose a local-mode instance through a reverse proxy. Remote hosting still needs a separately reviewed TLS, proxy, identity, persistence, and operational security design; token mode alone is not production deployment approval.
 
 ### Optional local Ollama agent
 
@@ -111,11 +115,11 @@ KAVACH_AGENT_ENABLED=1
 KAVACH_AGENT_TIMEOUT=30
 ```
 
-The agent remains disabled by default. KAVACH accepts only loopback Ollama URLs. The workflow sends bounded findings/workflow metadata to the model, not the original or masked prompt. Model output cannot override deterministic scan, masking or verification decisions.
+The advisory AI review remains disabled by default. KAVACH accepts only loopback Ollama URLs. The reviewer receives bounded finding metadata and redacted context, not raw sensitive values. Its output cannot override deterministic detection, risk assessment or masking; the dashboard route does not run a separate verification step.
 
 ### Load the Chrome extension
 
-In Chrome, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the repository's `extension/` directory. The extension package and automated checks passed, but installation on the release-review machine was blocked because Developer mode was administrator-managed. Installed-extension Allow/Warn/Mask/Block behavior therefore remains unverified in Chrome. Test with synthetic text only.
+Manual functional tests recorded in the project status report passed: EMAIL Mask, Warn and Block on ChatGPT, Claude and Gemini; EMAIL Block persisted after reloading the extension; and a synthetic PAN was masked as `[PAN]` on ChatGPT. These user-reported tests cover the listed behaviors and are not an independent security audit or a guarantee for every identifier or site state. The automated preflight checks extension policy/privacy, detector parity, JavaScript syntax and manifest validity; they do not verify the downloadable ZIP contents. A separate manual SHA-256 comparison confirmed that all five files in `static/downloads/kavach-chrome-extension.zip` match their extension source files. Developer Mode was administrator-restricted on the review machine, so installation was not verified on that machine. Test with synthetic text only.
 
 ## Tests
 
@@ -144,7 +148,7 @@ node .\extension\tests\parity.js
 
 ### Recorded release verification
 
-The release preflight recorded **105 passing Python tests**, **1,557/1,557 native detector parity cases**, passing extension policy/privacy and package checks, passing JavaScript syntax checks, and passing manifest and Git whitespace checks. These checks verify selected behavior; they are not a security certification, installed-browser acceptance, or accuracy guarantee.
+The latest verified release preflight passed **123 Python tests**, **1,557/1,557 detector parity cases**, extension policy/privacy tests, JavaScript syntax checks, manifest validation, and Git whitespace checks. These checks verify selected behavior; they are not a security certification, installed-browser acceptance, or accuracy guarantee.
 
 ## Evaluation
 
@@ -166,9 +170,9 @@ The 1,557-case parity result compares shared native Python and JavaScript detect
 ## Security and privacy
 
 - **Extension path:** prompt scanning runs in the browser. The extension requests Chrome storage and its source has no direct network calls. Per-type settings use `chrome.storage.sync`. If a user submits a prompt, the destination AI service receives what remains after that policy action; Allow can pass the original prompt.
-- **Dashboard/backend path:** the supported launcher binds to `127.0.0.1`; API operations use a local token, and write requests receive same-origin checks and security headers. Health is intentionally public.
+- **Dashboard/backend path:** the supported launcher binds to `127.0.0.1`; in the default `local` mode the server accepts owner API requests only from loopback clients without a token prompt. Explicit `token` mode requires a configured API token. Write requests receive same-origin checks and security headers. Minimal liveness at `/healthz` is intentionally public.
 - **Chat proxy:** a separate backend route; it forwards masked message content to its configured upstream. Do not treat this route as fully local or production-ready.
-- **Agent path:** Ollama is loopback-only. The planner receives bounded workflow/finding metadata rather than prompt text or detected source values.
+- **Autonomous path:** Ollama is loopback-only. The advisory reviewer receives bounded finding metadata and redacted context rather than raw sensitive values; its findings do not alter deterministic scan or masking output.
 - **Audit path:** SQLite stores workflow metadata, not prompt content or detected values. Retention is 30 days by default and can be configured. SQLite files are not encrypted by default.
 - **Uploads:** only TXT/PDF, up to 5 MiB per file and 20 pages per PDF. Scanned PDFs are not OCR processed; uploaded files and extracted text are not persisted by the scan route.
 
@@ -177,7 +181,7 @@ These controls reduce specific risks; they do not guarantee detection or complet
 ## Limitations and future work
 
 - Detection is rule-based and can miss unsupported, obfuscated, novel or contextual formats. Presidio is configured for English; multilingual detection quality is not established.
-- Extension site selectors can break as target websites change. Installed-extension policy behavior was not verified on the review machine due to administrator-managed Developer mode.
+- Extension site selectors can break as target websites change. The recorded manual tests cover selected EMAIL policies on ChatGPT, Claude and Gemini plus a synthetic PAN on ChatGPT; other identifiers and site states are not established. Developer Mode restrictions prevented installation verification on the review machine.
 - Rate limits are in-memory and apply only to selected routes; they do not coordinate multiple workers and omit `/api/scan-global` and `/api/agentic/scan`.
 - SQLite is not encrypted by default; there is no versioned migration framework or documented, tested backup/restore process.
 - The optional agent has variable model latency and is not independently evaluated for semantic review quality.
@@ -194,7 +198,6 @@ Issues and pull requests are welcome. Include a concise reproduction case and th
 ## Further documentation
 
 - [Windows setup and project guide](README_FIRST.md)
-- [Reproducible demo runbook](docs/demo_runbook.md)
 - [Security validation notes](docs/security_validation.md)
 - [Synthetic holdout methodology and results](docs/independent_synthetic_holdout.md)
 - [Future deployment prerequisites](docs/deployment_readiness.md)

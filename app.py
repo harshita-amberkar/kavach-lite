@@ -24,7 +24,7 @@ from pypdf import Configuration, PdfReader
 from pypdf._configuration import CURRENT_CONFIGURATION
 
 from kavach import analyze
-from kavach.global_detector import analyze_global
+from kavach.global_detector import analyze_global, preload_analyzer
 from kavach.agent import (
     AGENT_ENABLED,
     OLLAMA_MODEL,
@@ -32,8 +32,7 @@ from kavach.agent import (
     review_findings,
     validate_ollama_url,
 )
-from kavach.agentic import run_agentic_workflow
-from kavach.audit import database_status, list_recent_runs
+from kavach.audit import database_status, list_recent_runs, record_run
 
 # --------------------------------------------------
 # Configuration
@@ -70,6 +69,12 @@ ALLOWED_HOSTS = [
     ).split(",")
     if host.strip()
 ]
+
+OWNER_ACCESS_MODE = os.getenv("KAVACH_OWNER_ACCESS_MODE", "local").strip().lower()
+if OWNER_ACCESS_MODE not in {"local", "token"}:
+    raise RuntimeError(
+        "KAVACH_OWNER_ACCESS_MODE must be either 'local' or 'token'."
+    )
 
 STATIC = Path(__file__).parent / "static"
 
@@ -127,8 +132,14 @@ app = FastAPI(
 # A configured token remains stable across restarts.
 # Otherwise, generate a random token for this server process.
 _configured_api_token = os.getenv("KAVACH_API_TOKEN", "").strip()
+if OWNER_ACCESS_MODE == "token" and len(_configured_api_token) < 40:
+    raise RuntimeError(
+        "KAVACH_API_TOKEN must contain at least 40 characters when "
+        "KAVACH_OWNER_ACCESS_MODE is 'token'."
+    )
 API_TOKEN = _configured_api_token or secrets.token_urlsafe(32)
 app.state.api_token = API_TOKEN
+app.state.owner_access_mode = OWNER_ACCESS_MODE
 app.state.rate_limit_events = {}
 
 app.add_middleware(
@@ -143,7 +154,7 @@ app.mount(
 )
 
 # --------------------------------------------------
-# Browser request origin protection and API authentication
+# Owner API access and browser write protection
 # --------------------------------------------------
 
 def _origin_matches_request(origin: str, request: Request) -> bool:
@@ -183,6 +194,7 @@ def _secure_response_headers(response, request: Request):
 
 
 def _rate_limit_allowed(request: Request, now: float | None = None) -> bool:
+    """Apply a process-local per-route, per-client-IP rolling-window limit."""
     limit = RATE_LIMITS.get(request.url.path)
     if limit is None:
         return True
@@ -208,39 +220,56 @@ def _rate_limit_allowed(request: Request, now: float | None = None) -> bool:
         return True
 
 
+def _request_client_is_loopback(request: Request) -> bool:
+    """Trust only the direct ASGI peer address, never forwarding headers."""
+    client = request.client
+    if client is None:
+        return False
+    try:
+        address = ipaddress.ip_address(client.host)
+    except ValueError:
+        return False
+    if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+        address = address.ipv4_mapped
+    return address.is_loopback
+
+
 @app.middleware("http")
 async def enforce_same_origin_for_writes(request: Request, call_next):
-    """Reject cross-origin writes and authenticate protected API routes."""
+    """Enforce owner API access and same-origin writes."""
 
-    if request.method not in {"GET", "HEAD", "OPTIONS"}:
-        origin = request.headers.get("origin")
-
-        # Requests without Origin remain supported for local CLI/API clients.
-        # Protected routes still require the KAVACH token below.
-        if origin and not _origin_matches_request(origin, request):
-            return _secure_response_headers(JSONResponse(
-                status_code=403,
-                content={"detail": "Cross-origin requests are not allowed."},
-            ), request)
-
-    # Keep health checks public.
-    # Protect other /api routes and the chat proxy.
     protected_api_path = (
-        (
-            request.url.path.startswith("/api/")
-            and request.url.path != "/api/health"
-        )
+        request.url.path.startswith("/api/")
         or request.url.path == "/v1/chat/completions"
     )
 
     if protected_api_path:
-        supplied_token = request.headers.get("x-kavach-token", "")
-        expected_token = request.app.state.api_token
-
-        if not secrets.compare_digest(supplied_token, expected_token):
+        if (
+            request.app.state.owner_access_mode == "local"
+            and not _request_client_is_loopback(request)
+        ):
             return _secure_response_headers(JSONResponse(
-                status_code=401,
-                content={"detail": "Invalid or missing KAVACH API token."},
+                status_code=403,
+                content={"detail": "Owner APIs are available only from this device."},
+            ), request)
+
+        if request.app.state.owner_access_mode == "token":
+            supplied_token = request.headers.get("x-kavach-token", "")
+            expected_token = request.app.state.api_token
+            if not secrets.compare_digest(supplied_token, expected_token):
+                return _secure_response_headers(JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid or missing KAVACH API token."},
+                ), request)
+
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        origin = request.headers.get("origin")
+
+        # Origin checks supplement owner access controls; they do not authorize access.
+        if origin and not _origin_matches_request(origin, request):
+            return _secure_response_headers(JSONResponse(
+                status_code=403,
+                content={"detail": "Cross-origin requests are not allowed."},
             ), request)
 
     if request.method == "POST" and not _rate_limit_allowed(request):
@@ -387,11 +416,26 @@ def configured_upstream_hostname():
 
 @app.on_event("startup")
 async def report_upstream_configuration():
-    """Log API-token availability and upstream configuration status."""
-    if not _configured_api_token:
+    """Log owner access mode and upstream configuration status."""
+    if OWNER_ACCESS_MODE == "local":
         logger.warning(
-            "KAVACH_API_TOKEN is not configured. Set it in the server "
-            "environment before using protected dashboard/API routes."
+            "Owner APIs are restricted to loopback clients; remote deployment "
+            "requires KAVACH_OWNER_ACCESS_MODE=token and a configured token."
+        )
+    else:
+        logger.info("Owner APIs require the configured KAVACH_API_TOKEN.")
+
+    try:
+        preload_ms = preload_analyzer()
+        logger.info(
+            "KAVACH startup: Presidio analyzer ready in %.2f ms",
+            preload_ms,
+        )
+    except Exception as exc:
+        logger.warning(
+            "KAVACH startup: Presidio analyzer preload failed (%s); "
+            "global detection will use its existing fallback behavior.",
+            type(exc).__name__,
         )
 
     host = configured_upstream_hostname()
@@ -453,6 +497,12 @@ def health():
     }
 
 
+@app.get("/healthz")
+def public_health():
+    """Minimal public liveness response with no owner diagnostics."""
+    return {"status": "ok"}
+
+
 # --------------------------------------------------
 # Scan pasted text
 # --------------------------------------------------
@@ -462,39 +512,149 @@ class ScanIn(BaseModel):
     mode: str = Field(default="label", pattern="^(label|partial)$")
 
 
+def _finish_scan_performance(
+    result: dict,
+    started: float,
+    ollama_review_ms: float | None = None,
+) -> None:
+    performance = result.setdefault("performance", {})
+    performance.setdefault("native_detection_ms", 0.0)
+    performance.setdefault("presidio_initialization_ms", None)
+    performance.setdefault("presidio_detection_ms", None)
+    performance.setdefault("global_detection_ms", None)
+    if ollama_review_ms is not None or "ollama_review_ms" not in performance:
+        performance["ollama_review_ms"] = (
+            round(ollama_review_ms, 2)
+            if ollama_review_ms is not None
+            else None
+        )
+    performance["total_backend_processing_ms"] = round(
+        (time.perf_counter() - started) * 1000,
+        2,
+    )
+
+
 @app.post("/api/scan")
 def scan_text(body: ScanIn):
+    started = time.perf_counter()
     result = analyze(body.text, body.mode)
 
+    ollama_review_ms = None
     if AGENT_ENABLED:
+        review_started = time.perf_counter()
         result["agent_review"] = review_findings(
             body.text,
             result["findings"],
         )
+        ollama_review_ms = (time.perf_counter() - review_started) * 1000
 
+    _finish_scan_performance(result, started, ollama_review_ms)
     return result
 
 
 @app.post("/api/scan-global")
 def scan_global_text(body: ScanIn):
+    started = time.perf_counter()
     result = analyze_global(body.text, body.mode)
-
-    if AGENT_ENABLED:
-        result["agent_review"] = review_findings(
-            body.text,
-            result["findings"],
-        )
-
+    _finish_scan_performance(result, started)
     return result
 
 
 @app.post("/api/agentic/scan")
 def scan_agentic(body: ScanIn):
-    return run_agentic_workflow(
-        body.text,
-        body.mode,
-        source="api",
+    started = time.perf_counter()
+    # Both Protect modes use this exact deterministic detector/masking pass.
+    # The local analyst receives a copy of finding metadata and can only add
+    # advisory review data; it cannot change the result returned to the user.
+    result = analyze_global(body.text, body.mode)
+    findings = result.get("findings", [])
+    if not isinstance(findings, list):
+        findings = []
+
+    review_started = time.perf_counter()
+    try:
+        agent_review = review_findings(
+            body.text,
+            [dict(item) for item in findings if isinstance(item, dict)],
+        )
+        if not isinstance(agent_review, dict):
+            agent_review = {"status": "unavailable", "reviews": []}
+    except Exception:
+        agent_review = {"status": "unavailable", "reviews": []}
+    ollama_review_ms = (time.perf_counter() - review_started) * 1000
+
+    _finish_scan_performance(result, started, ollama_review_ms)
+    global_detection = result.get("global_detection")
+    global_detection_status = (
+        global_detection.get("status", "unavailable")
+        if isinstance(global_detection, dict)
+        else "unavailable"
     )
+    verification_status = "not_run"
+    requires_human_review = (
+        global_detection_status != "ok"
+        or verification_status != "passed"
+    )
+    result.update({
+        "workflow": "KAVACH Autonomous Privacy Workflow",
+        "status": "completed",
+        "agent_enabled": AGENT_ENABLED,
+        "agent_review": agent_review,
+        "agent_execution": {
+            "status": agent_review.get("status", "unavailable"),
+            "tool_calls": [],
+            "fallback_used": False,
+            "review_reason_codes": [],
+        },
+        "verification": {"status": verification_status},
+        "requires_human_review": requires_human_review,
+        "steps": [
+            {
+                "name": "global_scan",
+                "status": global_detection_status,
+                "findings_count": len(findings),
+            },
+            {
+                "name": "ai_privacy_review",
+                "status": str(agent_review.get("status", "unavailable")),
+            },
+        ],
+    })
+
+    audit = {"status": "unavailable"}
+    audit_started = time.perf_counter()
+    try:
+        audit["run_id"] = record_run(
+            workflow_name="global_privacy_workflow",
+            status="completed",
+            source="api",
+            mode=body.mode,
+            findings=findings,
+            risk=result.get("risk", {}),
+            agent_review=agent_review,
+            verification_status=verification_status,
+            requires_human_review=requires_human_review,
+            steps=[
+                {
+                    "name": "global_scan",
+                    "status": global_detection_status,
+                    "findings_count": len(findings),
+                },
+                {
+                    "name": "ai_privacy_review",
+                    "status": str(agent_review.get("status", "unavailable")),
+                },
+            ],
+        )
+        audit["status"] = "saved"
+    except Exception as exc:
+        audit["reason"] = type(exc).__name__
+    result.setdefault("performance", {})["audit_write_ms"] = round(
+        (time.perf_counter() - audit_started) * 1000,
+        2,
+    )
+    result["audit"] = audit
+    return result
 
 
 @app.get("/api/agentic/history")
@@ -509,6 +669,7 @@ def agentic_history(limit: int = Query(default=20, ge=1, le=100)):
 
 @app.post("/api/scan-file")
 async def scan_file(file: UploadFile = File(...)):
+    started = time.perf_counter()
     filename = Path(file.filename or "uploaded_file").name
     extension = Path(filename).suffix.lower()
 
@@ -615,6 +776,12 @@ async def scan_file(file: UploadFile = File(...)):
             )
 
         result = analyze_global(text, mode="label")
+        performance = dict(result.get("performance", {}))
+        performance["ollama_review_ms"] = None
+        performance["total_backend_processing_ms"] = round(
+            (time.perf_counter() - started) * 1000,
+            2,
+        )
 
         return {
             "filename": filename,
@@ -624,6 +791,7 @@ async def scan_file(file: UploadFile = File(...)):
             "masked_text": result.get("masked_text", ""),
             "risk": result.get("risk", {}),
             "count": len(result.get("findings", [])),
+            "performance": performance,
         }
 
     finally:
